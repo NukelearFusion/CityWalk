@@ -1,0 +1,16 @@
+﻿# Local backups (contain original secrets) — never publish
+_backup/
+
+# Dependencies and builds
+node_modules/
+dist/
+build/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# OS noise
+.DS_Store
+Thumbs.db

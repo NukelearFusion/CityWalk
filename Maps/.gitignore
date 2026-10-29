@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build output
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Environment — never commit real secrets
+.env
+.env.*
+!.env.example
+
+# Prisma generated client
+packages/*/generated/
+apps/*/generated/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Local uploads (dev only)
+uploads/
+
+# Working documents (source specification, screenshots)
+claudeworks/

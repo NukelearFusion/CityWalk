@@ -1,0 +1,39 @@
+{
+  "name": "citywalk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "City walking routes platform — web service and mobile app for travellers",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run build --workspace=@citywalk/shared && npm run dev --workspace=@citywalk/api",
+    "dev:api": "npm run dev --workspace=@citywalk/api",
+    "build": "npm run build --workspace=@citywalk/shared && npm run build --workspace=@citywalk/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
+    "test": "npm run test --workspaces --if-present",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate --workspace=@citywalk/api",
+    "db:seed": "npm run db:seed --workspace=@citywalk/api",
+    "db:studio": "npm run db:studio --workspace=@citywalk/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.21.0"
+  }
+}
