@@ -38,8 +38,7 @@ git push -u origin main
 
 1. https://app.netlify.com → **Add new site → Import an existing project** → GitHub → репозиторий.
    Настройки сборки подтянутся из `netlify.toml` (папка `client`, команда `npx expo export --platform web`, публикация `dist`).
-2. **Site settings → Environment variables** → добавить
-   `EXPO_PUBLIC_API_URL` = `https://citywalk-api-qke1.onrender.com/api/v1` → **Deploy**.
+2. **Deploy**. Адрес API (`EXPO_PUBLIC_API_URL`) уже задан в `netlify.toml`, вручную добавлять не нужно.
 3. Адрес сайта вписать в `CORS_ORIGINS` на Render (если отличается) → Render перезапустится.
 
 ## 3. Телефон с публичным API
