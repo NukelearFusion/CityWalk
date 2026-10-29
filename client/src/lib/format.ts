@@ -1,4 +1,4 @@
-import type { I18n } from "@/i18n";
+import type { I18n } from '@/i18n';
 
 /**
  * Human-readable duration: minutes below an hour, hours and minutes above it.
@@ -13,6 +13,20 @@ export function formatDuration(minutes: number, { t, format }: I18n): string {
   return rest === 0
     ? format(t.units.hoursShort, { value: hours })
     : format(t.units.hoursMinutesShort, { hours, minutes: rest });
+}
+
+/**
+ * Compact duration for cards and stats: "45 min" below an hour, otherwise
+ * hours to the nearest half ("3.5 h"), as in the mockups.
+ */
+export function formatHours(minutes: number, { t, format }: I18n): string {
+  const safe = Math.max(0, Math.round(minutes));
+  if (safe < 60) return format(t.units.minutesShort, { value: safe });
+
+  const halves = Math.round(safe / 30) / 2;
+  return format(t.units.hoursShort, {
+    value: Number.isInteger(halves) ? halves : halves.toFixed(1),
+  });
 }
 
 /**

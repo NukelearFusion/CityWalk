@@ -208,8 +208,7 @@ const ROUTE_SEEDS: RouteSeed[] = [
       },
       {
         name: 'Most Tumski',
-        description:
-          'Zielony most zakochanych łączący Wyspę Piasek z Ostrowem Tumskim.',
+        description: 'Zielony most zakochanych łączący Wyspę Piasek z Ostrowem Tumskim.',
         latitude: 51.114,
         longitude: 17.0446,
       },
@@ -301,8 +300,7 @@ const ROUTE_SEEDS: RouteSeed[] = [
       },
       {
         name: 'Brama Zielona',
-        description:
-          'Dawna rezydencja królewska zamykająca Długi Targ od strony Motławy.',
+        description: 'Dawna rezydencja królewska zamykająca Długi Targ od strony Motławy.',
         latitude: 54.3487,
         longitude: 18.656,
       },

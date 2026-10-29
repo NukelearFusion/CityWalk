@@ -16,6 +16,14 @@ export const ROUTE_CATEGORIES = [
 
 export type RouteCategory = (typeof ROUTE_CATEGORIES)[number];
 
+/**
+ * What a traveller can ask the planner for. `MIXED` is a request, not a kind of
+ * place: it stands for "a blend of everything".
+ */
+export const INTERESTS = ['SIGHTSEEING', 'FOOD', 'ENTERTAINMENT', 'NATURE', 'MIXED'] as const;
+
+export type Interest = (typeof INTERESTS)[number];
+
 export type RouteStatus = 'DRAFT' | 'PUBLISHED';
 
 export type RouteSort = 'newest' | 'duration_asc' | 'duration_desc' | 'distance_asc';

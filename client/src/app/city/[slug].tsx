@@ -1,10 +1,13 @@
-import { FlatList, View } from 'react-native';
+import { View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { RouteCard } from '@/components/route-card';
-import { Screen } from '@/components/ui/screen';
+import { Grid } from '@/components/layout/grid';
+import { Page } from '@/components/layout/page';
+import { RouteRow } from '@/components/route-row';
+import { SectionHeader } from '@/components/ui/section-header';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
 import { useCity, useRoutes } from '@/api/queries';
+import { useLayout } from '@/hooks/use-layout';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme';
 
@@ -12,80 +15,70 @@ import { useTheme } from '@/theme';
 export default function CityScreen() {
   const theme = useTheme();
   const { t, plural } = useI18n();
+  const { isDesktop } = useLayout();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const citySlug = slug ?? '';
 
   const city = useCity(citySlug);
   const routes = useRoutes({ city: citySlug });
 
-  const retry = () => {
-    void city.refetch();
-    void routes.refetch();
-  };
-
   if (city.isPending || routes.isPending) {
     return (
-      <Screen>
+      <Page>
         <LoadingState />
-      </Screen>
+      </Page>
     );
   }
 
   if (city.error || routes.error) {
     const missing = city.error?.name === 'NotFoundError';
     return (
-      <Screen>
+      <Page>
         <ErrorState
           title={missing ? t.common.notFoundTitle : t.common.errorTitle}
           body={missing ? t.common.notFoundBody : t.common.errorBody}
           retryLabel={t.common.retry}
-          onRetry={retry}
+          onRetry={() => {
+            void city.refetch();
+            void routes.refetch();
+          }}
         />
-      </Screen>
+      </Page>
     );
   }
 
-  const cityData = city.data;
   const routeList = routes.data ?? [];
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: cityData.name }} />
+    <Page>
+      <Stack.Screen options={{ title: city.data.name }} />
 
-      <FlatList
-        data={routeList}
-        keyExtractor={(route) => route.id}
-        renderItem={({ item }) => <RouteCard route={item} />}
-        ListHeaderComponent={
-          <View style={{ gap: theme.spacing.md, marginBottom: theme.spacing.xl }}>
-            <View style={{ gap: theme.spacing.xs }}>
-              <Text variant="display">{cityData.name}</Text>
-              <Text variant="caption" color="textMuted">
-                {cityData.country} · {plural(t.cities.routeCount, cityData.routeCount)}
-              </Text>
-            </View>
-
-            {cityData.description ? (
-              <Text variant="body" color="textMuted">
-                {cityData.description}
-              </Text>
-            ) : null}
-
-            <Text variant="title" style={{ marginTop: theme.spacing.md }}>
-              {t.city.routesTitle}
+      <View style={{ gap: theme.spacing['2xl'] }}>
+        <View style={{ gap: theme.spacing.sm, maxWidth: 720 }}>
+          <Text variant="eyebrow" color="eyebrow">
+            {city.data.country} · {plural(t.cities.routeCount, city.data.routeCount)}
+          </Text>
+          <Text variant={isDesktop ? 'displayXL' : 'display'}>{city.data.name}</Text>
+          {city.data.description ? (
+            <Text variant="body" color="textMuted">
+              {city.data.description}
             </Text>
-          </View>
-        }
-        ListEmptyComponent={
-          <EmptyState icon="walk-outline" title={t.city.emptyTitle} body={t.city.emptyBody} />
-        }
-        contentContainerStyle={{
-          padding: theme.spacing.xl,
-          gap: theme.spacing.lg,
-          flexGrow: 1,
-        }}
-        showsVerticalScrollIndicator={false}
-      />
-    </Screen>
+          ) : null}
+        </View>
+
+        <View style={{ gap: theme.spacing.md }}>
+          <SectionHeader title={t.city.routesTitle} />
+          {routeList.length === 0 ? (
+            <EmptyState icon="walk-outline" title={t.city.emptyTitle} body={t.city.emptyBody} />
+          ) : (
+            <Grid columns={isDesktop ? 2 : 1} gap={theme.spacing.md}>
+              {routeList.map((route) => (
+                <RouteRow key={route.id} route={route} />
+              ))}
+            </Grid>
+          )}
+        </View>
+      </View>
+    </Page>
   );
 }

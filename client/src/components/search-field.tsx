@@ -19,15 +19,15 @@ export function SearchField({ value, onChangeText, placeholder, clearLabel }: Se
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-        height: 48,
-        paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.radius.md,
+        height: 52,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.radius.full,
         backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
       }}
     >
-      <Ionicons name="search" size={18} color={theme.colors.textSubtle} />
+      <Ionicons name="search" size={18} color={theme.colors.accent} />
 
       <TextInput
         value={value}
@@ -41,6 +41,7 @@ export function SearchField({ value, onChangeText, placeholder, clearLabel }: Se
         style={{
           flex: 1,
           color: theme.colors.text,
+          fontFamily: theme.fonts.regular,
           fontSize: theme.typography.body.fontSize,
           // Removes the default vertical padding Android adds to text inputs.
           paddingVertical: 0,

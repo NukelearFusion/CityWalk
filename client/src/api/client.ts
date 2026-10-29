@@ -48,7 +48,13 @@ const publishedRoutes = (): RouteDetail[] =>
 
 /** Strips the detail-only fields so listings carry no more data than they render. */
 function toSummary(route: RouteDetail): RouteSummary {
-  const { description: _description, stops: _stops, images: _images, startingPoint: _start, ...summary } = route;
+  const {
+    description: _description,
+    stops: _stops,
+    images: _images,
+    startingPoint: _start,
+    ...summary
+  } = route;
   return summary;
 }
 
@@ -80,13 +86,15 @@ function matchesQuery(route: RouteDetail, query: RouteQuery): boolean {
   return true;
 }
 
-const SORTERS: Record<NonNullable<RouteQuery['sort']>, (a: RouteSummary, b: RouteSummary) => number> =
-  {
-    newest: (a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
-    duration_asc: (a, b) => a.stats.durationMinutes - b.stats.durationMinutes,
-    duration_desc: (a, b) => b.stats.durationMinutes - a.stats.durationMinutes,
-    distance_asc: (a, b) => a.stats.distanceMeters - b.stats.distanceMeters,
-  };
+const SORTERS: Record<
+  NonNullable<RouteQuery['sort']>,
+  (a: RouteSummary, b: RouteSummary) => number
+> = {
+  newest: (a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
+  duration_asc: (a, b) => a.stats.durationMinutes - b.stats.durationMinutes,
+  duration_desc: (a, b) => b.stats.durationMinutes - a.stats.durationMinutes,
+  distance_asc: (a, b) => a.stats.distanceMeters - b.stats.distanceMeters,
+};
 
 // Fixture implementations, used when no API URL is configured.
 
@@ -151,7 +159,10 @@ async function apiGet<T>(path: string, resource: string): Promise<T> {
     const body = (await response.json().catch(() => null)) as {
       error?: { message?: string };
     } | null;
-    throw new ApiError(response.status, body?.error?.message ?? `Request failed (${response.status})`);
+    throw new ApiError(
+      response.status,
+      body?.error?.message ?? `Request failed (${response.status})`,
+    );
   }
 
   return (await response.json()) as T;

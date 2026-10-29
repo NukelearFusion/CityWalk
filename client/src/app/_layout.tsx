@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -13,25 +14,43 @@ import {
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import { GlobalStyles } from '@/components/layout/global-styles';
+import { HeaderScrollProvider } from '@/components/layout/header-scroll';
+import { SiteHeader } from '@/components/layout/site-header';
+import { CityProvider } from '@/context/city';
+import { useLayout } from '@/hooks/use-layout';
 import { I18nProvider } from '@/i18n';
 import { useTheme } from '@/theme';
 
 // Text set before the fonts arrive would flash in the system face and then jump.
 void SplashScreen.preventAutoHideAsync();
 
-/** Screens rendered by the navigator, styled from the design tokens. */
+/**
+ * Screens rendered by the navigator, styled from the design tokens.
+ *
+ * On wide web screens the site header replaces both the tab bar and the native
+ * stack headers, so every page shares one piece of chrome.
+ */
 function RootNavigator() {
   const theme = useTheme();
+  const { isWide } = useLayout();
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar style="dark" />
+      <GlobalStyles />
       <Stack
         screenOptions={{
+          headerShown: !isWide,
           headerStyle: { backgroundColor: theme.colors.background },
-          headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontFamily: theme.fonts.semibold, fontSize: 17 },
+          headerTintColor: theme.colors.accent,
+          headerTitleStyle: {
+            fontFamily: theme.fonts.semibold,
+            fontSize: 17,
+            color: theme.colors.text,
+          },
           headerShadowVisible: false,
+          headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: theme.colors.background },
         }}
       >
@@ -39,7 +58,8 @@ function RootNavigator() {
         <Stack.Screen name="city/[slug]" options={{ title: '' }} />
         <Stack.Screen name="route/[slug]" options={{ title: '' }} />
       </Stack>
-    </>
+      {isWide ? <SiteHeader /> : null}
+    </View>
   );
 }
 
@@ -82,9 +102,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
-          <SafeAreaProvider>
-            <RootNavigator />
-          </SafeAreaProvider>
+          <CityProvider>
+            <HeaderScrollProvider>
+              <SafeAreaProvider>
+                <RootNavigator />
+              </SafeAreaProvider>
+            </HeaderScrollProvider>
+          </CityProvider>
         </I18nProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

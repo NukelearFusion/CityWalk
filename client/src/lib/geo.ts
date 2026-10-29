@@ -19,9 +19,7 @@ export function distanceBetween(a: Coordinates, b: Coordinates): number {
   const dLon = toRadians(b.longitude - a.longitude);
   const h =
     Math.sin(dLat / 2) ** 2 +
-    Math.sin(dLon / 2) ** 2 *
-      Math.cos(toRadians(a.latitude)) *
-      Math.cos(toRadians(b.latitude));
+    Math.sin(dLon / 2) ** 2 * Math.cos(toRadians(a.latitude)) * Math.cos(toRadians(b.latitude));
 
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
@@ -36,15 +34,9 @@ export function pathLength(points: readonly Coordinates[]): number {
 }
 
 /** Estimated walking time in minutes, including time spent at each stop. */
-export function estimateWalkingMinutes(
-  distanceMeters: number,
-  stopCount: number,
-): number {
+export function estimateWalkingMinutes(distanceMeters: number, stopCount: number): number {
   const travel = distanceMeters / WALKING_SPEED_M_PER_MIN;
-  return Math.max(
-    1,
-    Math.round(travel + Math.max(0, stopCount) * MINUTES_PER_STOP),
-  );
+  return Math.max(1, Math.round(travel + Math.max(0, stopCount) * MINUTES_PER_STOP));
 }
 
 export interface Region {
@@ -58,10 +50,7 @@ export interface Region {
  * Smallest map region containing every point, with a margin so markers are not
  * clipped by the viewport edge. Returns `null` for an empty set.
  */
-export function regionForPoints(
-  points: readonly Coordinates[],
-  padding = 1.6,
-): Region | null {
+export function regionForPoints(points: readonly Coordinates[], padding = 1.6): Region | null {
   const first = points[0];
   if (!first) return null;
 

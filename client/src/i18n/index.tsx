@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { getLocales } from 'expo-localization';
 import { catalogues, DEFAULT_LOCALE, type Locale, type Translations } from './translations';
 
 /** A message with plural forms, as declared in the catalogue. */
@@ -51,18 +50,8 @@ export interface I18n {
 
 const I18nContext = createContext<I18n | null>(null);
 
-/** Best matching supported locale for the device, falling back to Polish. */
-function detectLocale(): Locale {
-  const preferred = getLocales();
-  for (const entry of preferred) {
-    const code = entry.languageCode;
-    if (code && code in catalogues) return code as Locale;
-  }
-  return DEFAULT_LOCALE;
-}
-
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(detectLocale);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
 
   const plural = useCallback(
     (forms: PluralForms, count: number): string =>

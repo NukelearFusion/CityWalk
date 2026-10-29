@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "CityWalk",
+    "name": "Trasa",
     "slug": "mapsmobile",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "citywalk",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -15,7 +15,7 @@
     "android": {
       "package": "com.citywalk.app",
       "adaptiveIcon": {
-        "backgroundColor": "#059468",
+        "backgroundColor": "#1F5C47",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -31,7 +31,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#059468",
+          "backgroundColor": "#1F5C47",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
