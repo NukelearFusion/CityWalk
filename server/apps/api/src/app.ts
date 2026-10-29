@@ -3,9 +3,10 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
-import { env, isProduction, isTest } from './config/env.js';
+import { env, isTest } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
+import { HttpError } from './lib/http-error.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { generalLimiter } from './middleware/rate-limit.js';
 import { authRouter } from './modules/auth/router.js';
@@ -56,7 +57,7 @@ export function createApp(): Express {
           callback(null, true);
           return;
         }
-        callback(new Error(`Origin ${origin} is not allowed`));
+        callback(HttpError.forbidden(`Origin ${origin} is not allowed`));
       },
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -100,9 +101,9 @@ export function createApp(): Express {
   app.use(notFoundHandler);
   app.use(errorHandler);
 
-  if (!isProduction) {
-    logger.debug({ origins: env.CORS_ORIGINS }, 'Allowed CORS origins');
-  }
+  // Not secret, and the first thing to check when a browser client cannot
+  // reach the API.
+  logger.info({ origins: env.CORS_ORIGINS }, 'Allowed CORS origins');
 
   return app;
 }

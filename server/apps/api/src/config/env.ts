@@ -43,7 +43,15 @@ const envSchema = z
       .transform((value) =>
         value
           .split(',')
-          .map((origin) => origin.trim())
+          // Values pasted into a hosting panel often carry quotes or a trailing
+          // slash; a browser's Origin header never does, so both are dropped.
+          .map((origin) =>
+            origin
+              .trim()
+              .replace(/^['"]|['"]$/g, '')
+              .replace(/\/+$/, '')
+              .toLowerCase(),
+          )
           .filter(Boolean),
       ),
 
