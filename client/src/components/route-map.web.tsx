@@ -18,7 +18,7 @@ export function RouteMap({ stops, style }: RouteMapProps) {
     <View
       style={[
         {
-          backgroundColor: theme.colors.surfaceAlt,
+          backgroundColor: theme.colors.surfaceMuted,
           alignItems: 'center',
           justifyContent: 'center',
           gap: theme.spacing.sm,

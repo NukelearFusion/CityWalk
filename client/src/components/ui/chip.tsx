@@ -18,7 +18,7 @@ export function Chip({ label, selected = false, onPress, style }: ChipProps) {
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm - 2,
     borderRadius: theme.radius.full,
-    backgroundColor: selected ? theme.colors.accent : theme.colors.surfaceAlt,
+    backgroundColor: selected ? theme.colors.accent : theme.colors.surfaceMuted,
     borderWidth: 1,
     borderColor: selected ? theme.colors.accent : theme.colors.border,
   };

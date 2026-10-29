@@ -31,7 +31,7 @@ export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
           width: 64,
           height: 64,
           borderRadius: theme.radius.full,
-          backgroundColor: theme.colors.surfaceAlt,
+          backgroundColor: theme.colors.surfaceMuted,
           alignItems: 'center',
           justifyContent: 'center',
         }}

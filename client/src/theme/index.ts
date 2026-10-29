@@ -1,10 +1,11 @@
-import { useColorScheme } from 'react-native';
 import {
-  darkColors,
+  colors,
   elevation,
-  lightColors,
+  fonts,
+  motion,
   radius,
   spacing,
+  tiles,
   typography,
   type ColorScheme,
 } from './tokens';
@@ -15,35 +16,30 @@ export interface Theme {
   radius: typeof radius;
   typography: typeof typography;
   elevation: typeof elevation;
-  isDark: boolean;
+  tiles: typeof tiles;
+  fonts: typeof fonts;
+  motion: typeof motion;
 }
-
-const lightTheme: Theme = {
-  colors: lightColors,
-  spacing,
-  radius,
-  typography,
-  elevation,
-  isDark: false,
-};
-
-const darkTheme: Theme = {
-  colors: darkColors,
-  spacing,
-  radius,
-  typography,
-  elevation,
-  isDark: true,
-};
 
 /**
- * Follows the OS appearance setting. Both theme objects are module-level
- * constants, so switching schemes never allocates and never breaks memoisation
- * in consumers.
+ * The design is light only: the warm paper background is part of the brand,
+ * so the app does not follow the OS dark mode.
  */
+const theme: Theme = {
+  colors,
+  spacing,
+  radius,
+  typography,
+  elevation,
+  tiles,
+  fonts,
+  motion,
+};
+
+/** Kept as a hook so a second scheme could be added without touching consumers. */
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? darkTheme : lightTheme;
+  return theme;
 }
 
-export { darkTheme, lightTheme };
+export { theme };
 export * from './tokens';

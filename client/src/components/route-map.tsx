@@ -43,7 +43,7 @@ export function RouteMap({
       <View
         style={[
           {
-            backgroundColor: theme.colors.surfaceAlt,
+            backgroundColor: theme.colors.surfaceMuted,
             alignItems: 'center',
             justifyContent: 'center',
           },
