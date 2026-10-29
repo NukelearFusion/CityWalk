@@ -1,3 +1,5 @@
+import type { StopCategory } from './itinerary';
+
 /**
  * Domain model shared with the backend.
  *
@@ -50,6 +52,11 @@ export interface RouteStop {
   latitude: number;
   longitude: number;
   imageUrl: string | null;
+  /** Planner metadata; absent from an API that predates it. */
+  category?: StopCategory;
+  address?: string;
+  visitMinutes?: number;
+  costPln?: number;
 }
 
 export interface RouteImage {
@@ -64,6 +71,8 @@ export interface RouteStats {
   distanceMeters: number;
   durationMinutes: number;
   stopCount: number;
+  /** Sum of the stops' per-person costs, in złoty. */
+  costPln?: number;
 }
 
 export interface RouteSummary {

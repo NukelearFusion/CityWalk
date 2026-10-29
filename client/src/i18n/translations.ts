@@ -1,4 +1,5 @@
 import type { Interest, RouteCategory } from '@/types/domain';
+import type { StopCategory } from '@/types/itinerary';
 
 /**
  * Translation catalogue.
@@ -133,7 +134,24 @@ const en = {
     emptyStops: 'This route has no stops defined yet.',
     free: 'Free',
     stopCounter: 'Stop %{position} of %{total}',
+    itinerary: 'Itinerary',
+    recenter: 'Show the whole route',
+    walk: '%{minutes} min walk',
+    next: 'Next:',
+    lastStop: 'This is the last stop',
+    openInMaps: 'Open in Maps',
+    nextStop: 'Next stop',
+    finish: 'Finish',
+    backToRoute: 'Back to route',
+    whyTitle: "Why it's in your route",
+    details: 'Stop details',
   },
+  stopCategories: {
+    SIGHTSEEING: 'Sightseeing',
+    FOOD: 'Food',
+    ENTERTAINMENT: 'Entertainment',
+    NATURE: 'Nature',
+  } satisfies Record<StopCategory, string>,
   myRoute: {
     emptyTitle: 'No route yet',
     emptyBody: 'Build a walk from your interests and budget — it will appear here.',
@@ -290,6 +308,23 @@ const pl: Translations = {
     emptyStops: 'Ta trasa nie ma jeszcze zdefiniowanych punktów.',
     free: 'Bezpłatnie',
     stopCounter: 'Punkt %{position} z %{total}',
+    itinerary: 'Plan trasy',
+    recenter: 'Pokaż całą trasę',
+    walk: '%{minutes} min pieszo',
+    next: 'Dalej:',
+    lastStop: 'To ostatni punkt',
+    openInMaps: 'Otwórz w Mapach',
+    nextStop: 'Następny punkt',
+    finish: 'Zakończ',
+    backToRoute: 'Wróć do trasy',
+    whyTitle: 'Dlaczego jest na trasie',
+    details: 'Szczegóły punktu',
+  },
+  stopCategories: {
+    SIGHTSEEING: 'Zwiedzanie',
+    FOOD: 'Jedzenie',
+    ENTERTAINMENT: 'Rozrywka',
+    NATURE: 'Natura',
   },
   myRoute: {
     emptyTitle: 'Brak trasy',

@@ -56,7 +56,9 @@ function RootNavigator() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="city/[slug]" options={{ title: '' }} />
-        <Stack.Screen name="route/[slug]" options={{ title: '' }} />
+        <Stack.Screen name="route/[slug]/index" options={{ title: '' }} />
+        <Stack.Screen name="route/[slug]/map" options={{ headerShown: false }} />
+        <Stack.Screen name="route/[slug]/stop/[position]" options={{ headerShown: false }} />
       </Stack>
       {isWide ? <SiteHeader /> : null}
     </View>

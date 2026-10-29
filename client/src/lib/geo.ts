@@ -6,7 +6,7 @@ export interface Coordinates {
 const EARTH_RADIUS_M = 6_371_008.8;
 
 /** Average sightseeing walking pace in metres per minute (≈4.5 km/h). */
-const WALKING_SPEED_M_PER_MIN = 75;
+export const WALKING_SPEED_M_PER_MIN = 75;
 
 /** Time budgeted for actually looking at each attraction. */
 const MINUTES_PER_STOP = 5;

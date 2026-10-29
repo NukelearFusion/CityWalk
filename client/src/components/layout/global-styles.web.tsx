@@ -19,6 +19,8 @@ html, body { background: ${colors.background}; }
   border: 3px solid ${colors.background};
 }
 ::-webkit-scrollbar-thumb:hover { background: ${colors.accent}; }
+.trasa-tiles { filter: saturate(0.45) sepia(0.18) hue-rotate(35deg) brightness(1.04) contrast(0.92); }
+.leaflet-container { font-family: DMSans_400Regular, system-ui, sans-serif; background: ${colors.surfaceMuted}; }
 :focus-visible { outline: 2px solid ${colors.accent}; outline-offset: 3px; border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -1,66 +1,79 @@
-import { useMemo, useRef } from 'react';
-import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, type MapMarker } from 'react-native-maps';
+import { useEffect, useMemo, useRef } from 'react';
+import { Platform, View } from 'react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { StopNumber } from '@/components/route/stop-number';
 import { regionForPoints } from '@/lib/geo';
 import { useTheme } from '@/theme';
-import { Text } from '@/components/ui/text';
-import type { RouteStop } from '@/types/domain';
+import { MUTED_MAP_STYLE } from './map/google-style';
+import type { RouteMapProps } from './map/types';
 
-export interface RouteMapProps {
-  stops: RouteStop[];
-  style?: StyleProp<ViewStyle>;
-  /** Disables gestures for preview maps embedded in a scrolling screen. */
-  interactive?: boolean;
-  /** Stop currently selected elsewhere on the screen; its callout is opened. */
-  focusedStopId?: string | null;
-  onSelectStop?: (stop: RouteStop) => void;
-}
+export type { MapPoint, RouteMapProps } from './map/types';
+
+const EDGE = 48;
 
 /**
- * Route geometry on an interactive map (spec 4.1.6, 4.1.8 – 4.1.10).
+ * Route on an interactive native map (spec 4.1.6, 4.1.8 – 4.1.10): a dotted
+ * green path through numbered terracotta stops.
  *
- * Android is pinned to the Google provider so the map looks the same on every
- * device; iOS keeps Apple Maps, which needs no API key.
+ * Android uses Google Maps with a muted style that matches the app's paper
+ * tones; iOS keeps Apple Maps, which needs no API key.
  */
 export function RouteMap({
-  stops,
+  points,
   style,
   interactive = true,
-  focusedStopId = null,
-  onSelectStop,
+  focusedId = null,
+  onSelect,
+  inset,
+  fitKey = 0,
 }: RouteMapProps) {
   const theme = useTheme();
-  const markerRefs = useRef(new Map<string, MapMarker>());
+  const mapRef = useRef<MapView>(null);
 
-  const region = useMemo(() => regionForPoints(stops), [stops]);
+  const region = useMemo(() => regionForPoints(points), [points]);
   const path = useMemo(
-    () => stops.map(({ latitude, longitude }) => ({ latitude, longitude })),
-    [stops],
+    () => points.map(({ latitude, longitude }) => ({ latitude, longitude })),
+    [points],
   );
 
-  if (!region) {
-    return (
-      <View
-        style={[
-          {
-            backgroundColor: theme.colors.surfaceMuted,
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          style,
-        ]}
-      >
-        <Text variant="caption" color="textMuted">
-          —
-        </Text>
-      </View>
+  const padding = useMemo(
+    () => ({
+      top: EDGE + (inset?.top ?? 0),
+      right: EDGE + (inset?.right ?? 0),
+      bottom: EDGE + (inset?.bottom ?? 0),
+      left: EDGE + (inset?.left ?? 0),
+    }),
+    [inset?.top, inset?.right, inset?.bottom, inset?.left],
+  );
+
+  // Whole route on first layout and whenever "recenter" is pressed.
+  useEffect(() => {
+    if (path.length === 0) return;
+    const timer = setTimeout(() => {
+      mapRef.current?.fitToCoordinates(path, { edgePadding: padding, animated: fitKey > 0 });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fitKey, path, padding]);
+
+  useEffect(() => {
+    const target = points.find((point) => point.id === focusedId);
+    if (!target) return;
+    mapRef.current?.animateCamera(
+      { center: { latitude: target.latitude, longitude: target.longitude }, zoom: 16 },
+      { duration: theme.motion.slow },
     );
+  }, [focusedId, points, theme.motion.slow]);
+
+  if (!region) {
+    return <View style={[{ backgroundColor: theme.colors.surfaceMuted }, style]} />;
   }
 
   return (
     <MapView
+      ref={mapRef}
       style={style}
       provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+      customMapStyle={MUTED_MAP_STYLE}
       initialRegion={region}
       scrollEnabled={interactive}
       zoomEnabled={interactive}
@@ -68,28 +81,27 @@ export function RouteMap({
       pitchEnabled={false}
       toolbarEnabled={false}
       showsPointsOfInterests={false}
+      mapPadding={inset ? { top: 0, right: 0, bottom: inset.bottom ?? 0, left: 0 } : undefined}
     >
       <Polyline
         coordinates={path}
         strokeColor={theme.colors.accent}
-        strokeWidth={4}
+        strokeWidth={5}
         lineCap="round"
         lineJoin="round"
+        lineDashPattern={[1, 10]}
       />
 
-      {stops.map((stop) => (
+      {points.map((point) => (
         <Marker
-          key={stop.id}
-          ref={(instance) => {
-            if (instance) markerRefs.current.set(stop.id, instance);
-            else markerRefs.current.delete(stop.id);
-          }}
-          coordinate={{ latitude: stop.latitude, longitude: stop.longitude }}
-          title={`${stop.position}. ${stop.name}`}
-          description={stop.description}
-          pinColor={stop.id === focusedStopId ? theme.colors.accentPressed : theme.colors.accent}
-          onPress={() => onSelectStop?.(stop)}
-        />
+          key={point.id}
+          coordinate={{ latitude: point.latitude, longitude: point.longitude }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          onPress={() => onSelect?.(point)}
+          accessibilityLabel={`${point.position}. ${point.name}`}
+        >
+          <StopNumber position={point.position} size={point.id === focusedId ? 40 : 32} ringed />
+        </Marker>
       ))}
     </MapView>
   );
