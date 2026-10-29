@@ -5,6 +5,9 @@
 #
 #   docker compose up -d postgres
 #
+# Fixed project name, so the stack keeps its identity whatever the folder is called.
+name: citywalk
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -32,3 +35,5 @@ services:
 
 volumes:
   postgres-data:
+    # Name kept from the original project folder, so existing data is reused.
+    name: maps_postgres-data

@@ -1,0 +1,49 @@
+# Render Blueprint: API + PostgreSQL.
+# Render → New → Blueprint → select this repository.
+
+databases:
+  - name: citywalk-db
+    plan: free
+    databaseName: citywalk
+    user: citywalk
+
+services:
+  - type: web
+    name: citywalk-api
+    runtime: node
+    plan: free
+    rootDir: server
+    # Dev dependencies (Prisma CLI, TypeScript) are needed to build even though
+    # NODE_ENV is production.
+    buildCommand: npm ci --include=dev && npm run build
+    # Migrations run on every start: the free plan has no pre-deploy step.
+    startCommand: npm run db:deploy --workspace=@citywalk/api && npm start --workspace=@citywalk/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '22'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: citywalk-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # Netlify site address, e.g. https://citywalk.netlify.app
+      - key: CORS_ORIGINS
+        sync: false
+      - key: RECOVERY_EMAIL
+        sync: false
+      # Production refuses to start without SMTP: administrator sign-in codes
+      # are delivered by e-mail. For Gmail use an App Password.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false

@@ -207,6 +207,223 @@ const CITIES: {
       },
     ],
   },
+  {
+    slug: 'poznan',
+    name: 'Poznań',
+    country: 'Polska',
+    description:
+      'Stolica Wielkopolski i jedno z najstarszych polskich miast. Ostrów Tumski, renesansowy ratusz z koziołkami i Dzielnica Cesarska leżą w zasięgu krótkiego spaceru.',
+    centerLatitude: 52.4064,
+    centerLongitude: 16.9252,
+    routes: [
+      {
+        slug: 'poznan-stary-rynek-ostrow-tumski',
+        name: 'Od Starego Rynku na Ostrów Tumski',
+        summary: 'Ratusz z koziołkami, Fara, Zamek Królewski i kolebka państwa polskiego.',
+        description:
+          'Spacer przez średniowieczne serce Poznania: od Starego Rynku przez Wzgórze Przemysła aż na Ostrów Tumski, gdzie stoi najstarsza katedra w Polsce.',
+        category: 'HISTORICAL',
+        stops: [
+          {
+            name: 'Ratusz',
+            description:
+              'Renesansowy ratusz na Starym Rynku. Codziennie o 12:00 na wieży trykają się koziołki.',
+            latitude: 52.4083,
+            longitude: 16.9343,
+          },
+          {
+            name: 'Fara Poznańska',
+            description: 'Barokowa świątynia z bogato zdobionym wnętrzem i zabytkowymi organami.',
+            latitude: 52.4069,
+            longitude: 16.9321,
+          },
+          {
+            name: 'Zamek Królewski',
+            description: 'Odbudowany zamek na Wzgórzu Przemysła, dziś Muzeum Sztuk Użytkowych.',
+            latitude: 52.4096,
+            longitude: 16.93,
+          },
+          {
+            name: 'Most Biskupa Jordana',
+            description: 'Kładka nad Cybiną łącząca Śródkę z Ostrowem Tumskim.',
+            latitude: 52.4116,
+            longitude: 16.9454,
+          },
+          {
+            name: 'Katedra Poznańska',
+            description:
+              'Najstarsza katedra w Polsce. W Złotej Kaplicy upamiętniono pierwszych Piastów.',
+            latitude: 52.4115,
+            longitude: 16.9478,
+          },
+          {
+            name: 'Brama Poznania',
+            description: 'Centrum interpretacji dziejów Ostrowa Tumskiego i początków państwa.',
+            latitude: 52.412,
+            longitude: 16.953,
+          },
+        ],
+      },
+      {
+        slug: 'poznan-jezioro-maltanskie',
+        name: 'Wokół Jeziora Maltańskiego',
+        summary: 'Zielony szlak wzdłuż toru regatowego aż do Nowego Zoo.',
+        description:
+          'Spokojna trasa nad sztucznym jeziorem, na którym rozgrywane są regaty. Prowadzi obok term i całorocznego stoku narciarskiego do jednego z największych ogrodów zoologicznych w Polsce.',
+        category: 'NATURE',
+        stops: [
+          {
+            name: 'Rondo Śródka',
+            description: 'Punkt startowy przy kolorowym muralu na Śródce.',
+            latitude: 52.4105,
+            longitude: 16.9555,
+          },
+          {
+            name: 'Zachodni brzeg Malty',
+            description: 'Początek promenady wokół jeziora i toru regatowego.',
+            latitude: 52.4045,
+            longitude: 16.9655,
+          },
+          {
+            name: 'Termy Maltańskie',
+            description: 'Kompleks basenów sportowych i rekreacyjnych nad jeziorem.',
+            latitude: 52.399,
+            longitude: 16.9855,
+          },
+          {
+            name: 'Malta Ski',
+            description: 'Całoroczny stok narciarski z torem saneczkowym.',
+            latitude: 52.4,
+            longitude: 16.996,
+          },
+          {
+            name: 'Nowe Zoo',
+            description: 'Rozległy ogród zoologiczny w lesie, z wybiegami w naturalnym otoczeniu.',
+            latitude: 52.3985,
+            longitude: 17.009,
+          },
+        ],
+      },
+      {
+        slug: 'poznan-dzielnica-cesarska',
+        name: 'Dzielnica Cesarska',
+        summary: 'Monumentalna zabudowa z początku XX wieku wokół Zamku Cesarskiego.',
+        description:
+          'Reprezentacyjna dzielnica wzniesiona za czasów pruskich. Trasa łączy Zamek Cesarski, gmachy uniwersytetu i operę z klasycystyczną Biblioteką Raczyńskich.',
+        category: 'ARCHITECTURE',
+        stops: [
+          {
+            name: 'Zamek Cesarski',
+            description:
+              'Ostatnia rezydencja cesarska zbudowana w Europie (1910), dziś Centrum Kultury Zamek.',
+            latitude: 52.4078,
+            longitude: 16.9195,
+          },
+          {
+            name: 'Pomnik Poznańskiego Czerwca 1956',
+            description: 'Dwa krzyże upamiętniające ofiary pierwszego wielkiego protestu w PRL.',
+            latitude: 52.4072,
+            longitude: 16.918,
+          },
+          {
+            name: 'Collegium Minus',
+            description: 'Neorenesansowy gmach, siedziba władz Uniwersytetu im. Adama Mickiewicza.',
+            latitude: 52.4086,
+            longitude: 16.9175,
+          },
+          {
+            name: 'Teatr Wielki',
+            description: 'Gmach opery im. Stanisława Moniuszki z 1910 roku.',
+            latitude: 52.408,
+            longitude: 16.923,
+          },
+          {
+            name: 'Biblioteka Raczyńskich',
+            description:
+              'Klasycystyczny gmach przy placu Wolności, jedna z najstarszych bibliotek publicznych.',
+            latitude: 52.4077,
+            longitude: 16.93,
+          },
+        ],
+      },
+      {
+        slug: 'poznan-szlak-kultury',
+        name: 'Szlak teatrów i muzeów',
+        summary: 'Od Starego Browaru do muzeów na Starym Rynku.',
+        description:
+          'Kulturalne oblicze Poznania: dawny browar zamieniony w centrum sztuki, teatr zbudowany ze składek mieszkańców i najważniejsze miejskie galerie.',
+        category: 'CULTURE',
+        stops: [
+          {
+            name: 'Stary Browar',
+            description: 'Dawny browar przekształcony w centrum handlu, sztuki i biznesu.',
+            latitude: 52.4019,
+            longitude: 16.9264,
+          },
+          {
+            name: 'Teatr Polski',
+            description:
+              'Teatr z 1875 roku zbudowany ze składek, z napisem „Naród sobie” na fasadzie.',
+            latitude: 52.4064,
+            longitude: 16.9257,
+          },
+          {
+            name: 'Muzeum Narodowe',
+            description: 'Galeria Malarstwa i Rzeźby z kolekcją sztuki polskiej i europejskiej.',
+            latitude: 52.4079,
+            longitude: 16.9318,
+          },
+          {
+            name: 'Galeria Miejska Arsenał',
+            description: 'Galeria sztuki współczesnej w samym środku Starego Rynku.',
+            latitude: 52.4086,
+            longitude: 16.9333,
+          },
+          {
+            name: 'Muzeum Instrumentów Muzycznych',
+            description:
+              'Kolekcja instrumentów z różnych epok i kontynentów w kamienicach przy rynku.',
+            latitude: 52.4089,
+            longitude: 16.9345,
+          },
+        ],
+      },
+      {
+        slug: 'poznan-smaki-poznania',
+        name: 'Smaki Poznania',
+        summary: 'Targi, rogale świętomarcińskie i pyry z gzikiem.',
+        description:
+          'Kulinarna trasa od secesyjnych Jeżyc do Starego Rynku. Po drodze lokalne targowiska i pokaz wypieku słynnego rogala świętomarcińskiego.',
+        category: 'FOOD',
+        stops: [
+          {
+            name: 'Rynek Jeżycki',
+            description: 'Targowisko otoczone secesyjnymi kamienicami Jeżyc.',
+            latitude: 52.4108,
+            longitude: 16.9007,
+          },
+          {
+            name: 'Plac Wielkopolski',
+            description: 'Miejski targ z warzywami, owocami i lokalnymi produktami.',
+            latitude: 52.4103,
+            longitude: 16.929,
+          },
+          {
+            name: 'Rogalowe Muzeum Poznania',
+            description: 'Pokazy wypieku rogala świętomarcińskiego z degustacją.',
+            latitude: 52.4087,
+            longitude: 16.935,
+          },
+          {
+            name: 'Stary Rynek',
+            description: 'Lokale z kuchnią wielkopolską — warto spróbować pyr z gzikiem.',
+            latitude: 52.4084,
+            longitude: 16.9335,
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 async function seedContent(): Promise<void> {

@@ -7,7 +7,7 @@ apps/api/         # Express 5 + Prisma + PostgreSQL
 packages/shared/  # schematy Zod, typy DTO, stałe i obliczenia geograficzne
 ```
 
-Aplikacja mobilna znajduje się w osobnym katalogu `../mapsmobile`.
+Aplikacja (Android, iOS, web) znajduje się w katalogu `../client`.
 
 ## Wymagania
 

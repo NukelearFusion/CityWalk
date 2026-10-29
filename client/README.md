@@ -54,9 +54,9 @@ src/
 
 Domyślnie aplikacja korzysta z danych testowych (`src/api/mock-data.ts`) — trzy miasta i pięć tras z prawdziwymi współrzędnymi. Dystans i czas przejścia są wyliczane z geometrii trasy, tymi samymi wzorami co po stronie serwera.
 
-Aby podłączyć backend (`../Maps`), skopiuj `.env.example` do `.env` i ustaw `EXPO_PUBLIC_API_URL`, np. `http://192.168.0.10:4000/api/v1` (adres komputera w sieci LAN, nie `localhost`). Po zmianie `.env` uruchom `npx expo start -c`, aby wyczyścić pamięć podręczną bundlera. Ekrany korzystają wtedy z prawdziwego API — warstwa `src/api/client.ts` obsługuje oba źródła.
+Aby podłączyć backend (`../server`), skopiuj `.env.example` do `.env` i ustaw `EXPO_PUBLIC_API_URL`, np. `http://192.168.0.10:4000/api/v1` (adres komputera w sieci LAN, nie `localhost`). Po zmianie `.env` uruchom `npx expo start -c`, aby wyczyścić pamięć podręczną bundlera. Ekrany korzystają wtedy z prawdziwego API — warstwa `src/api/client.ts` obsługuje oba źródła.
 
-Podgląd w przeglądarce (`npm run web`) działa na porcie 8081, więc ten adres musi być dodany do `CORS_ORIGINS` w `Maps/apps/api/.env`.
+Podgląd w przeglądarce (`npm run web`) działa na porcie 8081, więc ten adres musi być dodany do `CORS_ORIGINS` w `server/apps/api/.env`.
 
 ## Mapa
 
