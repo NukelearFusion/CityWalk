@@ -1,6 +1,6 @@
 # Netlify: web build of the Expo app in client/.
-# Set EXPO_PUBLIC_API_URL in Site settings → Environment variables,
-# e.g. https://citywalk-api.onrender.com/api/v1 — it is baked in at build time.
+# EXPO_PUBLIC_API_URL is baked into the bundle at build time. It is public by
+# nature, so it lives here; a value set in the Netlify UI takes precedence.
 
 [build]
   base = "client"
@@ -9,6 +9,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  EXPO_PUBLIC_API_URL = "https://citywalk-api-qke1.onrender.com/api/v1"
 
 # Single-page app: every path is served by index.html and routed in the browser.
 [[redirects]]

@@ -26,7 +26,7 @@ git push -u origin main
    | `SMTP_FROM` | например `CityWalk <ваш адрес>` |
 
    Без SMTP сервер в production **не запустится** — это защита: коды входа админа отправляются по почте.
-3. После деплоя проверить: `https://citywalk-api.onrender.com/health` → `{"status":"ok"}`.
+3. После деплоя проверить: `https://citywalk-api-qke1.onrender.com/health` → `{"status":"ok"}`.
 4. **Залить демо-данные** (в production сид их не создаёт). В Render: база → **Connect → External Database URL**, скопировать и выполнить локально:
 
    ```bash
@@ -39,12 +39,12 @@ git push -u origin main
 1. https://app.netlify.com → **Add new site → Import an existing project** → GitHub → репозиторий.
    Настройки сборки подтянутся из `netlify.toml` (папка `client`, команда `npx expo export --platform web`, публикация `dist`).
 2. **Site settings → Environment variables** → добавить
-   `EXPO_PUBLIC_API_URL` = `https://citywalk-api.onrender.com/api/v1` → **Deploy**.
+   `EXPO_PUBLIC_API_URL` = `https://citywalk-api-qke1.onrender.com/api/v1` → **Deploy**.
 3. Адрес сайта вписать в `CORS_ORIGINS` на Render (если отличается) → Render перезапустится.
 
 ## 3. Телефон с публичным API
 
-В `client/.env`: `EXPO_PUBLIC_API_URL=https://citywalk-api.onrender.com/api/v1`, затем `npx expo start -c`.
+В `client/.env`: `EXPO_PUBLIC_API_URL=https://citywalk-api-qke1.onrender.com/api/v1`, затем `npx expo start -c`.
 Телефону больше не нужна та же Wi-Fi сеть, что и компьютеру.
 
 ## Ограничения бесплатных тарифов
