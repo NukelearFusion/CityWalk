@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { isHovered } from '@/lib/interaction';
 import { useTheme } from '@/theme';
 
 export interface CardProps {
@@ -7,22 +8,30 @@ export interface CardProps {
   onPress?: () => void;
   /** Accessibility label, required whenever the card is interactive. */
   accessibilityLabel?: string;
+  /** Green outline used for selected options in the plan wizard. */
+  selected?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 /**
- * Raised surface used for every list item in the app.
+ * White rounded surface used for list items and panels.
  * Renders a plain `View` when it has no press handler, so non-interactive cards
  * stay out of the accessibility focus order.
  */
-export function Card({ children, onPress, accessibilityLabel, style }: CardProps) {
+export function Card({
+  children,
+  onPress,
+  accessibilityLabel,
+  selected = false,
+  style,
+}: CardProps) {
   const theme = useTheme();
 
   const base: ViewStyle = {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderWidth: selected ? 2 : 1,
+    borderColor: selected ? theme.colors.accent : theme.colors.border,
     overflow: 'hidden',
     ...theme.elevation.card,
   };
@@ -36,9 +45,14 @@ export function Card({ children, onPress, accessibilityLabel, style }: CardProps
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      // Android draws its own ripple; iOS gets a subtle opacity change instead.
+      accessibilityState={{ selected }}
       android_ripple={{ color: theme.colors.border }}
-      style={({ pressed }) => [base, pressed && { opacity: 0.85 }, style]}
+      style={(state) => [
+        base,
+        isHovered(state) && !selected && { borderColor: theme.colors.textSubtle },
+        state.pressed && { opacity: 0.88 },
+        style,
+      ]}
     >
       {children}
     </Pressable>

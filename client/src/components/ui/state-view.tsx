@@ -50,7 +50,7 @@ export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
         <Button
           label={action.label}
           onPress={action.onPress}
-          variant="secondary"
+          variant="outline"
           style={{ marginTop: theme.spacing.sm }}
         />
       ) : null}

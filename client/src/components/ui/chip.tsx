@@ -1,30 +1,31 @@
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { isHovered } from '@/lib/interaction';
 import { useTheme } from '@/theme';
 import { Text } from './text';
 
 export interface ChipProps {
   label: string;
-  /** Filled accent styling — used for the active option in a filter group. */
+  /** Green fill — the active option in a filter group. */
   selected?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Compact pill used for categories and filter options. */
+/** Outlined pill for interests and filter options. */
 export function Chip({ label, selected = false, onPress, style }: ChipProps) {
   const theme = useTheme();
 
   const container: ViewStyle = {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm - 2,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm + 2,
     borderRadius: theme.radius.full,
-    backgroundColor: selected ? theme.colors.accent : theme.colors.surfaceMuted,
+    backgroundColor: selected ? theme.colors.accent : theme.colors.surface,
     borderWidth: 1,
     borderColor: selected ? theme.colors.accent : theme.colors.border,
   };
 
   const content = (
-    <Text variant="label" color={selected ? 'onAccent' : 'textMuted'} numberOfLines={1}>
+    <Text variant="bodyStrong" color={selected ? 'onAccent' : 'text'} numberOfLines={1}>
       {label}
     </Text>
   );
@@ -39,7 +40,12 @@ export function Chip({ label, selected = false, onPress, style }: ChipProps) {
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
-      style={({ pressed }) => [container, pressed && { opacity: 0.7 }, style]}
+      style={(state) => [
+        container,
+        isHovered(state) && !selected && { borderColor: theme.colors.accent },
+        state.pressed && { opacity: 0.75 },
+        style,
+      ]}
     >
       {content}
     </Pressable>

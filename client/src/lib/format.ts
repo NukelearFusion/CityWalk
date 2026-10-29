@@ -1,4 +1,4 @@
-import type { I18n } from '@/i18n';
+import type { I18n } from "@/i18n";
 
 /**
  * Human-readable duration: minutes below an hour, hours and minutes above it.
