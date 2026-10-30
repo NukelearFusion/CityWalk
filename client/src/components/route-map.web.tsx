@@ -21,6 +21,9 @@ const EDGE = 48;
 
 function markerIcon(point: MapPoint, focused: boolean): L.DivIcon {
   const size = focused ? 40 : 32;
+  // The label goes into raw HTML, so only a whole number may reach it: a
+  // tampered API response must not be able to inject markup.
+  const label = Math.trunc(Number(point.position)) || 0;
   return L.divIcon({
     className: '',
     iconSize: [size, size],
@@ -28,7 +31,7 @@ function markerIcon(point: MapPoint, focused: boolean): L.DivIcon {
     html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.cta};
       border:2px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
       font:600 ${Math.round(size * 0.44)}px DMSans_600SemiBold, system-ui, sans-serif;color:${colors.onCta};
-      box-shadow:0 4px 12px rgba(31,40,32,0.18)">${point.position}</div>`,
+      box-shadow:0 4px 12px rgba(31,40,32,0.18)">${label}</div>`,
   });
 }
 
