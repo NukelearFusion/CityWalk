@@ -19,6 +19,14 @@ enum RouteCategory {
   FOOD
 }
 
+/// Kind of place a stop is, as the route planner classifies it.
+enum StopCategory {
+  SIGHTSEEING
+  FOOD
+  ENTERTAINMENT
+  NATURE
+}
+
 enum RouteStatus {
   DRAFT
   PUBLISHED
@@ -60,6 +68,7 @@ model User {
   challenges LoginChallenge[]
   resets     PasswordReset[]
   devices    KnownDevice[]
+  savedPlans SavedPlan[]
 
   @@index([role])
   @@map("users")
@@ -162,7 +171,8 @@ model City {
   updatedAt       DateTime @updatedAt
 
   // Deleting a city that still has routes is rejected (spec 4.1.25).
-  routes Route[]
+  routes     Route[]
+  savedPlans SavedPlan[]
 
   @@index([name])
   @@map("cities")
@@ -185,6 +195,8 @@ model Route {
   distanceMeters  Int @default(0)
   durationMinutes Int @default(0)
   stopCount       Int @default(0)
+  /// Sum of the stops' per-person costs, maintained with the other stats.
+  costPln         Int @default(0)
 
   /// Maintained by the favourite endpoints, so the public listing never has to
   /// aggregate the favourites table.
@@ -209,16 +221,24 @@ model Route {
 
 /// An ordered point of interest on a route (spec 4.1.5, 4.1.7, 4.1.29 – 4.1.31, 4.1.34).
 model RouteStop {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   routeId     String
   position    Int
   name        String
-  description String   @default("")
+  description String  @default("")
   latitude    Float
   longitude   Float
   imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  /// Planner metadata: what kind of place it is, what it costs per person
+  /// (whole złoty, 0 = free) and how long a visit takes.
+  category     StopCategory @default(SIGHTSEEING)
+  costPln      Int          @default(0)
+  visitMinutes Int          @default(30)
+  address      String       @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
@@ -243,4 +263,29 @@ model RouteImage {
 
   @@index([routeId, position])
   @@map("route_images")
+}
+
+/// A route built by the planner and kept by a signed-in traveller.
+///
+/// Only the chosen stops and the request that produced them are stored; the
+/// figures are recomputed from the stops when the plan is opened, so they can
+/// never disagree with the places themselves.
+model SavedPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  cityId    String
+  title     String
+  /// Interests as requested, including MIXED.
+  interests String[]
+  budgetPln Int
+  people    Int      @default(1)
+  /// Stop ids in walking order.
+  stopIds   String[]
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("saved_plans")
 }

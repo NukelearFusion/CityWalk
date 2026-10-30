@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LIMITS } from '../constants.js';
+import { LIMITS, STOP_CATEGORIES } from '../constants.js';
 import {
   descriptionSchema,
   idSchema,
@@ -16,6 +16,11 @@ export const createStopSchema = z.object({
   latitude: latitudeSchema,
   longitude: longitudeSchema,
   imageUrl: urlSchema.nullish(),
+  category: z.enum(STOP_CATEGORIES).default('SIGHTSEEING'),
+  /** Per-person cost in whole złoty; 0 is free. */
+  costPln: z.coerce.number().int().min(0).max(2000).default(0),
+  visitMinutes: z.coerce.number().int().min(5).max(480).default(30),
+  address: z.string().trim().max(200).default(''),
 });
 
 export type CreateStopInput = z.infer<typeof createStopSchema>;
@@ -45,4 +50,8 @@ export interface StopDto {
   latitude: number;
   longitude: number;
   imageUrl: string | null;
+  category: (typeof STOP_CATEGORIES)[number];
+  costPln: number;
+  visitMinutes: number;
+  address: string;
 }

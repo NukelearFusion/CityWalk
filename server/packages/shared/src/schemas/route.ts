@@ -76,6 +76,8 @@ export interface RouteStatsDto {
   distanceMeters: number;
   durationMinutes: number;
   stopCount: number;
+  /** Sum of the stops' per-person costs, in złoty. */
+  costPln: number;
 }
 
 /** Route as shown in listings and search results. */

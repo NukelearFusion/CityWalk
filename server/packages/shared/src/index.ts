@@ -6,3 +6,4 @@ export * from './schemas/city.js';
 export * from './schemas/common.js';
 export * from './schemas/route.js';
 export * from './schemas/stop.js';
+export * from './schemas/plan.js';

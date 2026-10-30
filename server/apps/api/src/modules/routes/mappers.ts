@@ -38,6 +38,10 @@ export function toStopDto(stop: RouteStop): StopDto {
     latitude: stop.latitude,
     longitude: stop.longitude,
     imageUrl: stop.imageUrl,
+    category: stop.category,
+    costPln: stop.costPln,
+    visitMinutes: stop.visitMinutes,
+    address: stop.address,
   };
 }
 
@@ -66,6 +70,7 @@ export function toRouteSummaryDto(route: RouteWithCity): RouteSummaryDto {
       distanceMeters: route.distanceMeters,
       durationMinutes: route.durationMinutes,
       stopCount: route.stopCount,
+      costPln: route.costPln,
     },
     publishedAt: route.publishedAt?.toISOString() ?? null,
   };

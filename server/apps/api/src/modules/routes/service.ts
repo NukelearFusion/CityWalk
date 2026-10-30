@@ -20,7 +20,7 @@ export async function recalculateRouteStats(
   const stops = await tx.routeStop.findMany({
     where: { routeId },
     orderBy: { position: 'asc' },
-    select: { latitude: true, longitude: true },
+    select: { latitude: true, longitude: true, costPln: true },
   });
 
   const distanceMeters = pathLength(stops);
@@ -31,6 +31,7 @@ export async function recalculateRouteStats(
       distanceMeters,
       durationMinutes: estimateWalkingMinutes(distanceMeters, stops.length),
       stopCount: stops.length,
+      costPln: stops.reduce((sum, stop) => sum + stop.costPln, 0),
     },
   });
 }

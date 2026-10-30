@@ -15,6 +15,29 @@ export const ROUTE_CATEGORIES = [
 
 export type RouteCategory = (typeof ROUTE_CATEGORIES)[number];
 
+/** Kind of place a stop is, as the route planner classifies it. */
+export const STOP_CATEGORIES = ['SIGHTSEEING', 'FOOD', 'ENTERTAINMENT', 'NATURE'] as const;
+
+export type StopCategory = (typeof STOP_CATEGORIES)[number];
+
+/**
+ * What a traveller can ask the planner for. `MIXED` is not a kind of place but
+ * a request for a blend of all of them.
+ */
+export const INTERESTS = [...STOP_CATEGORIES, 'MIXED'] as const;
+
+export type Interest = (typeof INTERESTS)[number];
+
+/** Bounds of a planned route. */
+export const PLANNER = {
+  minStops: 2,
+  maxStops: 7,
+  maxBudgetPln: 2000,
+  minMinutes: 30,
+  maxMinutes: 720,
+  maxPeople: 10,
+} as const;
+
 /** Publication state of a route (spec 4.1.35 — Publish Route). */
 export const ROUTE_STATUSES = ['DRAFT', 'PUBLISHED'] as const;
 

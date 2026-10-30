@@ -12,6 +12,8 @@ export const ERROR_CODES = [
   'PAYLOAD_TOO_LARGE',
   'UNSUPPORTED_MEDIA_TYPE',
   'RATE_LIMITED',
+  // The route planner found too few matching places for the request.
+  'NOT_ENOUGH_PLACES',
   'INTERNAL_ERROR',
 ] as const;
 

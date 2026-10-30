@@ -426,6 +426,269 @@ const CITIES: {
   },
 ];
 
+type StopCategory = 'SIGHTSEEING' | 'FOOD' | 'ENTERTAINMENT' | 'NATURE';
+
+interface StopDetails {
+  category: StopCategory;
+  /** Approximate per-person cost in złoty (regular ticket or a typical spend). */
+  costPln: number;
+  visitMinutes: number;
+  address?: string;
+}
+
+/**
+ * Planner metadata per stop, keyed by stop name.
+ *
+ * Costs are estimates for demonstration — regular adult tickets or a typical
+ * spend — and must be checked before the data is presented as current.
+ */
+const STOP_DETAILS: Record<string, StopDetails> = {
+  // Kraków
+  Barbakan: { category: 'SIGHTSEEING', costPln: 18, visitMinutes: 30, address: 'ul. Basztowa' },
+  'Brama Floriańska': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'ul. Floriańska',
+  },
+  'Rynek Główny': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 40,
+    address: 'Rynek Główny',
+  },
+  'Kościół Mariacki': {
+    category: 'SIGHTSEEING',
+    costPln: 20,
+    visitMinutes: 40,
+    address: 'pl. Mariacki 5',
+  },
+  'Collegium Maius': {
+    category: 'SIGHTSEEING',
+    costPln: 25,
+    visitMinutes: 50,
+    address: 'ul. Jagiellońska 15',
+  },
+  Wawel: { category: 'SIGHTSEEING', costPln: 45, visitMinutes: 90, address: 'Wawel 5' },
+  // Wrocław
+  Rynek: { category: 'SIGHTSEEING', costPln: 0, visitMinutes: 40, address: 'Rynek' },
+  'Aula Leopoldina': {
+    category: 'SIGHTSEEING',
+    costPln: 25,
+    visitMinutes: 40,
+    address: 'pl. Uniwersytecki 1',
+  },
+  'Hala Targowa': { category: 'FOOD', costPln: 30, visitMinutes: 40, address: 'ul. Piaskowa 17' },
+  'Most Tumski': { category: 'SIGHTSEEING', costPln: 0, visitMinutes: 10, address: 'Most Tumski' },
+  'Katedra św. Jana Chrzciciela': {
+    category: 'SIGHTSEEING',
+    costPln: 15,
+    visitMinutes: 40,
+    address: 'pl. Katedralny 18',
+  },
+  // Gdańsk
+  'Brama Wyżynna': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 10,
+    address: 'Wały Jagiellońskie',
+  },
+  'Fontanna Neptuna': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 10,
+    address: 'Długi Targ',
+  },
+  'Bazylika Mariacka': {
+    category: 'SIGHTSEEING',
+    costPln: 16,
+    visitMinutes: 45,
+    address: 'ul. Podkramarska 5',
+  },
+  'Długi Targ': { category: 'FOOD', costPln: 45, visitMinutes: 60, address: 'Długi Targ' },
+  Żuraw: { category: 'SIGHTSEEING', costPln: 20, visitMinutes: 40, address: 'ul. Szeroka 67/68' },
+  // Poznań
+  Ratusz: {
+    category: 'SIGHTSEEING',
+    costPln: 25,
+    visitMinutes: 45,
+    address: 'Stary Rynek 1, Poznań',
+  },
+  'Fara Poznańska': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 30,
+    address: 'ul. Gołębia 1, Poznań',
+  },
+  'Zamek Królewski': {
+    category: 'SIGHTSEEING',
+    costPln: 25,
+    visitMinutes: 60,
+    address: 'Góra Przemysła 1, Poznań',
+  },
+  'Most Biskupa Jordana': {
+    category: 'NATURE',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'Ostrów Tumski, Poznań',
+  },
+  'Katedra Poznańska': {
+    category: 'SIGHTSEEING',
+    costPln: 15,
+    visitMinutes: 50,
+    address: 'Ostrów Tumski 17, Poznań',
+  },
+  'Brama Poznania': {
+    category: 'ENTERTAINMENT',
+    costPln: 25,
+    visitMinutes: 75,
+    address: 'ul. Gdańska 2, Poznań',
+  },
+  'Rondo Śródka': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'Rondo Śródka, Poznań',
+  },
+  'Zachodni brzeg Malty': {
+    category: 'NATURE',
+    costPln: 0,
+    visitMinutes: 40,
+    address: 'ul. Baraniaka, Poznań',
+  },
+  'Termy Maltańskie': {
+    category: 'ENTERTAINMENT',
+    costPln: 60,
+    visitMinutes: 120,
+    address: 'ul. Termalna 1, Poznań',
+  },
+  'Malta Ski': {
+    category: 'ENTERTAINMENT',
+    costPln: 40,
+    visitMinutes: 60,
+    address: 'ul. Wiankowa 2, Poznań',
+  },
+  'Nowe Zoo': {
+    category: 'NATURE',
+    costPln: 35,
+    visitMinutes: 120,
+    address: 'ul. Krańcowa 81, Poznań',
+  },
+  'Zamek Cesarski': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 40,
+    address: 'ul. Święty Marcin 80/82, Poznań',
+  },
+  'Pomnik Poznańskiego Czerwca 1956': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'pl. Mickiewicza, Poznań',
+  },
+  'Collegium Minus': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'ul. Wieniawskiego 1, Poznań',
+  },
+  'Teatr Wielki': {
+    category: 'ENTERTAINMENT',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'ul. Fredry 9, Poznań',
+  },
+  'Biblioteka Raczyńskich': {
+    category: 'SIGHTSEEING',
+    costPln: 0,
+    visitMinutes: 20,
+    address: 'pl. Wolności 19, Poznań',
+  },
+  'Stary Browar': {
+    category: 'ENTERTAINMENT',
+    costPln: 0,
+    visitMinutes: 60,
+    address: 'ul. Półwiejska 42, Poznań',
+  },
+  'Teatr Polski': {
+    category: 'ENTERTAINMENT',
+    costPln: 0,
+    visitMinutes: 15,
+    address: 'ul. 27 Grudnia 8/10, Poznań',
+  },
+  'Muzeum Narodowe': {
+    category: 'SIGHTSEEING',
+    costPln: 20,
+    visitMinutes: 75,
+    address: 'Al. Marcinkowskiego 9, Poznań',
+  },
+  'Galeria Miejska Arsenał': {
+    category: 'ENTERTAINMENT',
+    costPln: 10,
+    visitMinutes: 40,
+    address: 'Stary Rynek 6, Poznań',
+  },
+  'Muzeum Instrumentów Muzycznych': {
+    category: 'SIGHTSEEING',
+    costPln: 15,
+    visitMinutes: 45,
+    address: 'Stary Rynek 45, Poznań',
+  },
+  'Rynek Jeżycki': {
+    category: 'FOOD',
+    costPln: 20,
+    visitMinutes: 30,
+    address: 'Rynek Jeżycki, Poznań',
+  },
+  'Plac Wielkopolski': {
+    category: 'FOOD',
+    costPln: 20,
+    visitMinutes: 30,
+    address: 'pl. Wielkopolski, Poznań',
+  },
+  'Rogalowe Muzeum Poznania': {
+    category: 'FOOD',
+    costPln: 40,
+    visitMinutes: 60,
+    address: 'Stary Rynek 41, Poznań',
+  },
+  'Stary Rynek': {
+    category: 'FOOD',
+    costPln: 45,
+    visitMinutes: 60,
+    address: 'Stary Rynek, Poznań',
+  },
+};
+
+/**
+ * Brings planner metadata up to date on every seeded stop and refreshes each
+ * route's cost. Runs on every seed, so existing databases receive the data
+ * too; stops are matched by name and only these four fields are written.
+ */
+async function seedStopDetails(): Promise<void> {
+  for (const [name, details] of Object.entries(STOP_DETAILS)) {
+    await prisma.routeStop.updateMany({
+      where: { name },
+      data: {
+        category: details.category,
+        costPln: details.costPln,
+        visitMinutes: details.visitMinutes,
+        address: details.address ?? '',
+      },
+    });
+  }
+
+  const routes = await prisma.route.findMany({
+    select: { id: true, stops: { select: { costPln: true } } },
+  });
+  for (const route of routes) {
+    await prisma.route.update({
+      where: { id: route.id },
+      data: { costPln: route.stops.reduce((sum, stop) => sum + stop.costPln, 0) },
+    });
+  }
+}
+
 async function seedContent(): Promise<void> {
   for (const citySeed of CITIES) {
     const city = await prisma.city.upsert({
@@ -477,6 +740,8 @@ async function seedContent(): Promise<void> {
       });
     }
   }
+
+  await seedStopDetails();
 
   console.warn(`Demonstration content ready: ${CITIES.length} cities`);
 }

@@ -16,6 +16,7 @@ import { publicCitiesRouter } from './modules/cities/public-router.js';
 import { adminRoutesRouter } from './modules/routes/admin-router.js';
 import { publicRoutesRouter } from './modules/routes/public-router.js';
 import { favoritesRouter } from './modules/favorites/router.js';
+import { plannerRouter } from './modules/planner/router.js';
 
 /**
  * Assembles the HTTP application.
@@ -89,6 +90,8 @@ export function createApp(): Express {
 
   v1.use('/auth', authRouter);
   v1.use('/cities', publicCitiesRouter);
+  // Before the public routes router, whose `/:slug` would otherwise match first.
+  v1.use('/routes/plan', plannerRouter);
   v1.use('/routes', publicRoutesRouter);
   v1.use('/favorites', favoritesRouter);
 
