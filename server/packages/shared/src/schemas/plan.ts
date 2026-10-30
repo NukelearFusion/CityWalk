@@ -36,3 +36,23 @@ export interface PlanDto {
   };
   stops: PlanStopDto[];
 }
+
+/** Keeping a generated route (Saved tab). Stops are referenced, not copied. */
+export const savePlanSchema = z.object({
+  city: slugSchema,
+  title: z.string().trim().min(1).max(160),
+  interests: z.array(z.enum(INTERESTS)).min(1).max(INTERESTS.length),
+  budgetPln: z.coerce.number().int().min(0).max(PLANNER.maxBudgetPln),
+  maxMinutes: z.coerce.number().int().min(PLANNER.minMinutes).max(PLANNER.maxMinutes).nullish(),
+  people: z.coerce.number().int().min(1).max(PLANNER.maxPeople).default(1),
+  stopIds: z.array(z.string().min(1).max(64)).min(PLANNER.minStops).max(PLANNER.maxStops),
+});
+
+export type SavePlanInput = z.infer<typeof savePlanSchema>;
+
+export interface SavedPlanDto {
+  id: string;
+  title: string;
+  createdAt: string;
+  plan: PlanDto;
+}

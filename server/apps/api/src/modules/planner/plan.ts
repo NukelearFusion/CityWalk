@@ -157,17 +157,28 @@ export function planRoute(input: PlanInput, places: readonly Place[]): Plan {
 
   if (chosen.length < PLANNER.minStops) throw new NotEnoughPlacesError();
 
-  const ordered = walkingOrder(chosen, input.center);
+  return describeWalk(walkingOrder(chosen, input.center));
+}
+
+/**
+ * Positions, walking times and totals for stops already in walking order.
+ * Also used for saved plans, whose figures are recomputed from their stops.
+ */
+export function describeWalk(
+  ordered: readonly (Place & { matchedInterest?: StopCategory })[],
+): Plan {
   let distanceMeters = 0;
+  let cost = 0;
 
   const stops: PlannedStop[] = ordered.map((stop, index) => {
     const previous = ordered[index - 1];
     if (previous) distanceMeters += distanceBetween(previous, stop);
+    cost += stop.costPln;
     return {
       ...stop,
       position: index + 1,
       walkMinutesFromPrevious: previous ? walkMinutes(previous, stop) : null,
-      matchedInterest: stop.category,
+      matchedInterest: stop.matchedInterest ?? stop.category,
     };
   });
 

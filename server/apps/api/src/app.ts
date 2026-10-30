@@ -17,6 +17,7 @@ import { adminRoutesRouter } from './modules/routes/admin-router.js';
 import { publicRoutesRouter } from './modules/routes/public-router.js';
 import { favoritesRouter } from './modules/favorites/router.js';
 import { plannerRouter } from './modules/planner/router.js';
+import { savedPlansRouter } from './modules/saved-plans/router.js';
 
 /**
  * Assembles the HTTP application.
@@ -94,6 +95,7 @@ export function createApp(): Express {
   v1.use('/routes/plan', plannerRouter);
   v1.use('/routes', publicRoutesRouter);
   v1.use('/favorites', favoritesRouter);
+  v1.use('/saved-plans', savedPlansRouter);
 
   v1.use('/admin/admins', adminsRouter);
   v1.use('/admin/cities', adminCitiesRouter);
