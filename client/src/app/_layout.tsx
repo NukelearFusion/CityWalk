@@ -67,6 +67,8 @@ function RootNavigator() {
         <Stack.Screen name="plan/route/index" options={{ title: '' }} />
         <Stack.Screen name="plan/route/map" options={{ headerShown: false }} />
         <Stack.Screen name="plan/route/stop/[position]" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/sign-in" options={{ title: '' }} />
+        <Stack.Screen name="auth/sign-up" options={{ title: '' }} />
       </Stack>
       {isWide ? <SiteHeader /> : null}
     </View>

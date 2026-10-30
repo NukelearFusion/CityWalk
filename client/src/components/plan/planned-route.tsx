@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useRouter } from 'expo-router';
 import { RouteOverview } from '@/components/itinerary/route-overview';
+import { SavePlanButton } from '@/components/save-buttons';
 import { Page } from '@/components/layout/page';
 import { EmptyState } from '@/components/ui/state-view';
 import { usePlan } from '@/context/plan';
@@ -58,6 +59,7 @@ export function PlannedRouteOverview() {
               label: t.route.statCost,
             },
           ]}
+          accessory={<SavePlanButton plan={plan} />}
           secondary={{
             icon: 'refresh',
             label: t.plan.change,

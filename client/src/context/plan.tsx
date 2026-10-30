@@ -42,6 +42,8 @@ interface PlanState {
   failure: PlanFailure | null;
   /** Builds a route from the current preferences; resolves to whether it worked. */
   generate: () => Promise<boolean>;
+  /** Makes a saved plan the current one (opening it from the Saved tab). */
+  showPlan: (plan: Plan) => void;
 }
 
 const PlanContext = createContext<PlanState | null>(null);
@@ -127,6 +129,10 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       generating,
       failure,
       generate,
+      showPlan: (next) => {
+        setPlan(next);
+        void writeJson(PLAN_KEY, next);
+      },
     }),
     [preferences, slug, update, perPersonBudget, plan, generating, failure, generate],
   );

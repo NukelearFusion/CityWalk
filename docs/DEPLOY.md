@@ -38,8 +38,12 @@ git push -u origin main
 
 1. https://app.netlify.com → **Add new site → Import an existing project** → GitHub → репозиторий.
    Настройки сборки подтянутся из `netlify.toml` (папка `client`, команда `npx expo export --platform web`, публикация `dist`).
-2. **Deploy**. Адрес API (`EXPO_PUBLIC_API_URL`) уже задан в `netlify.toml`, вручную добавлять не нужно.
+2. **Deploy**. Сайт обращается к своему `/api`, Netlify проксирует его на Render (правило в `netlify.toml`), поэтому вход работает и в браузерах, блокирующих сторонние cookie.
 3. Адрес сайта вписать в `CORS_ORIGINS` на Render (если отличается) → Render перезапустится.
+
+## После обновления схемы базы
+
+Render применяет миграции сам при старте. Новые поля остановок (цена, время, адрес) заполняет seed — после деплоя один раз выполнить шаг 1.4 ещё раз.
 
 ## 3. Телефон с публичным API
 

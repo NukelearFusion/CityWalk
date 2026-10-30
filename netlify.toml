@@ -1,6 +1,4 @@
 # Netlify: web build of the Expo app in client/.
-# EXPO_PUBLIC_API_URL is baked into the bundle at build time. It is public by
-# nature, so it lives here; a value set in the Netlify UI takes precedence.
 
 [build]
   base = "client"
@@ -9,9 +7,20 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  EXPO_PUBLIC_API_URL = "https://citywalk-api-qke1.onrender.com/api/v1"
+  # The site calls its own /api, which Netlify forwards to Render (below).
+  # Same-origin requests keep the session cookie first-party, so browsers that
+  # block third-party cookies (Safari, Brave) still let people sign in.
+  # Baked into the bundle at build time; a value set in the Netlify UI wins.
+  EXPO_PUBLIC_API_URL = "/api/v1"
 
-# Single-page app: every path is served by index.html and routed in the browser.
+# API proxy. Listed before the SPA rule so /api never falls through to index.html.
+[[redirects]]
+  from = "/api/*"
+  to = "https://citywalk-api-qke1.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Single-page app: every other path is served by index.html and routed in the browser.
 [[redirects]]
   from = "/*"
   to = "/index.html"

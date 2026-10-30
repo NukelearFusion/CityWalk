@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { RouteOverview } from '@/components/itinerary/route-overview';
 import { ReadyRouteGate } from '@/components/itinerary/route-gate';
+import { FavoriteButton } from '@/components/save-buttons';
 import { useI18n } from '@/i18n';
 import { formatDistance, formatHours } from '@/lib/format';
 
@@ -36,6 +37,7 @@ export default function RouteScreen() {
               summary={route.summary}
               description={route.description}
               stats={stats}
+              accessory={<FavoriteButton routeId={route.id} />}
             />
           </>
         );

@@ -278,3 +278,138 @@ export async function fetchPlan(request: PlanRequest): Promise<Plan> {
   }
   return apiRequest<Plan>('POST', '/routes/plan', 'Plan', request);
 }
+
+// ── Accounts ────────────────────────────────────────────────────────────────
+
+export interface Account {
+  id: string;
+  email: string;
+  displayName: string;
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+}
+
+function requireApi(): void {
+  if (isUsingMockData) {
+    throw new ApiError(503, 'Accounts need the API (set EXPO_PUBLIC_API_URL).');
+  }
+}
+
+/** The signed-in account, or `null` when there is no valid session. */
+export async function fetchMe(): Promise<Account | null> {
+  if (isUsingMockData) return null;
+  try {
+    const { user } = await apiRequest<{ user: Account }>('GET', '/auth/me', 'Account');
+    return user;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
+}
+
+export async function signIn(email: string, password: string): Promise<Account> {
+  requireApi();
+  const body = await apiRequest<{ twoFactor: boolean; user?: Account }>(
+    'POST',
+    '/auth/login',
+    'Session',
+    { email, password },
+  );
+  // Administrators confirm with an e-mailed code; that flow belongs to the
+  // admin panel, not to the traveller app.
+  if (body.twoFactor || !body.user) {
+    throw new ApiError(
+      403,
+      'Administrator accounts sign in through the admin panel.',
+      'TWO_FACTOR',
+    );
+  }
+  return body.user;
+}
+
+export async function register(
+  displayName: string,
+  email: string,
+  password: string,
+): Promise<Account> {
+  requireApi();
+  const { user } = await apiRequest<{ user: Account }>('POST', '/auth/register', 'Account', {
+    displayName,
+    email,
+    password,
+  });
+  return user;
+}
+
+export async function signOut(): Promise<void> {
+  if (isUsingMockData) return;
+  await apiRequest<void>('POST', '/auth/logout', 'Session');
+}
+
+// ── Saved routes ────────────────────────────────────────────────────────────
+
+export interface SavedPlan {
+  id: string;
+  title: string;
+  createdAt: string;
+  plan: Plan;
+}
+
+export interface SavePlanRequest {
+  city: string;
+  title: string;
+  interests: Plan['interests'];
+  budgetPln: number;
+  people: number;
+  stopIds: string[];
+}
+
+export async function fetchSavedPlans(): Promise<SavedPlan[]> {
+  requireApi();
+  const { items } = await apiRequest<{ items: SavedPlan[] }>('GET', '/saved-plans', 'Saved plans');
+  return items;
+}
+
+export async function savePlan(request: SavePlanRequest): Promise<SavedPlan> {
+  requireApi();
+  const { item } = await apiRequest<{ item: SavedPlan }>(
+    'POST',
+    '/saved-plans',
+    'Saved plan',
+    request,
+  );
+  return item;
+}
+
+export async function deleteSavedPlan(id: string): Promise<void> {
+  requireApi();
+  await apiRequest<void>('DELETE', `/saved-plans/${encodeURIComponent(id)}`, 'Saved plan');
+}
+
+export async function fetchFavorites(): Promise<RouteSummary[]> {
+  requireApi();
+  const { items } = await apiRequest<{ items: RouteSummary[] }>(
+    'GET',
+    `/favorites?limit=${API_PAGE_LIMIT}`,
+    'Favourites',
+  );
+  return items;
+}
+
+export async function fetchFavoriteIds(): Promise<string[]> {
+  requireApi();
+  const { routeIds } = await apiRequest<{ routeIds: string[] }>(
+    'GET',
+    '/favorites/ids',
+    'Favourites',
+  );
+  return routeIds;
+}
+
+export async function setFavorite(routeId: string, saved: boolean): Promise<void> {
+  requireApi();
+  await apiRequest<void>(
+    saved ? 'PUT' : 'DELETE',
+    `/favorites/${encodeURIComponent(routeId)}`,
+    'Route',
+  );
+}
