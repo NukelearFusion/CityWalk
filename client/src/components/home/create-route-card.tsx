@@ -17,6 +17,9 @@ export interface PlanStep {
 export interface CreateRouteCardProps {
   steps: PlanStep[];
   onGenerate: () => void;
+  busy?: boolean;
+  /** Why the last attempt failed, shown above the button. */
+  error?: string;
 }
 
 const DOT = 28;
@@ -25,7 +28,7 @@ const DOT = 28;
  * The green planner card from the mockup: four numbered steps joined by a line,
  * ending in the result marker and the terracotta Generate button.
  */
-export function CreateRouteCard({ steps, onGenerate }: CreateRouteCardProps) {
+export function CreateRouteCard({ steps, onGenerate, busy = false, error }: CreateRouteCardProps) {
   const theme = useTheme();
   const { t } = useI18n();
 
@@ -128,7 +131,18 @@ export function CreateRouteCard({ steps, onGenerate }: CreateRouteCardProps) {
         </View>
       </View>
 
-      <Button label={t.home.generate} variant="cta" size="lg" onPress={onGenerate} />
+      {error ? (
+        <Text variant="caption" color="onAccent" style={{ opacity: 0.9 }}>
+          {error}
+        </Text>
+      ) : null}
+      <Button
+        label={busy ? t.plan.generating : t.home.generate}
+        variant="cta"
+        size="lg"
+        onPress={onGenerate}
+        disabled={busy}
+      />
     </View>
   );
 }

@@ -11,10 +11,13 @@ import { ErrorState, LoadingState } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
 import { useRoutes } from '@/api/queries';
 import { useSelectedCity } from '@/context/city';
+import { usePlan } from '@/context/plan';
 import { useLayout } from '@/hooks/use-layout';
 import { useI18n } from '@/i18n';
+import { PLANNED_ROUTE_HREF } from '@/lib/plan-copy';
 import { webStyle } from '@/lib/web-style';
 import { layout, useTheme } from '@/theme';
+import type { Interest } from '@/types/domain';
 
 /** Width of the planner column on desktop. */
 const PLANNER_WIDTH = 420;
@@ -32,18 +35,69 @@ export default function HomeScreen() {
   // Examples come from the city being planned for, like the mockup's Poznań list.
   const featured = useRoutes({ city: slug });
 
-  // The planner screens arrive with the route builder; until then every step
-  // leads to the ready-made routes.
-  const openPlanner = () => router.push('/explore');
+  const i18n = useI18n();
+  const { preferences, setInterests, generate, generating, failure } = usePlan();
+
+  const budgetValue =
+    preferences.budgetPln === null
+      ? t.home.stepBudgetEmpty
+      : `${i18n.format(t.units.currency, { value: preferences.budgetPln })} · ${
+          preferences.budgetMode === 'group' ? t.plan.wholeGroup : t.plan.perPerson
+        }`;
 
   const steps: PlanStep[] = [
-    { label: t.home.stepCity, value: city?.name ?? t.common.chooseCity, onPress: openPlanner },
-    { label: t.home.stepInterests, value: t.home.stepInterestsEmpty, onPress: openPlanner },
-    { label: t.home.stepBudget, value: t.home.stepBudgetEmpty, onPress: openPlanner },
-    { label: t.home.stepTime, value: t.home.stepTimeEmpty, onPress: openPlanner },
+    {
+      label: t.home.stepCity,
+      value: city?.name ?? t.common.chooseCity,
+      onPress: () => router.push('/plan/city'),
+    },
+    {
+      label: t.home.stepInterests,
+      value:
+        preferences.interests.length === 0
+          ? t.home.stepInterestsEmpty
+          : preferences.interests.map((interest) => t.interests[interest].short).join(' · '),
+      onPress: () => router.push('/plan/interests'),
+    },
+    { label: t.home.stepBudget, value: budgetValue, onPress: () => router.push('/plan/budget') },
+    {
+      label: t.home.stepTime,
+      value:
+        preferences.maxMinutes === null
+          ? t.home.stepTimeEmpty
+          : i18n.format(t.plan.hours, { value: preferences.maxMinutes / 60 }),
+      onPress: () => router.push('/plan/time'),
+    },
   ];
 
-  const planner = <CreateRouteCard steps={steps} onGenerate={openPlanner} />;
+  const onGenerate = async () => {
+    // Nothing chosen yet: the questions are the quickest way to a good route.
+    if (preferences.interests.length === 0) {
+      router.push('/plan/interests');
+      return;
+    }
+    if (await generate()) router.push(PLANNED_ROUTE_HREF);
+  };
+
+  const startWithInterest = (interest: Interest) => {
+    setInterests([interest]);
+    router.push('/plan/interests');
+  };
+
+  const planner = (
+    <CreateRouteCard
+      steps={steps}
+      onGenerate={() => void onGenerate()}
+      busy={generating}
+      error={
+        failure === 'not-enough-places'
+          ? t.plan.notEnough
+          : failure === 'unavailable'
+            ? t.plan.unavailable
+            : undefined
+      }
+    />
+  );
 
   const popular = (
     <View style={{ gap: theme.spacing.md }}>
@@ -96,7 +150,7 @@ export default function HomeScreen() {
   const interests = (
     <View style={{ gap: theme.spacing.md }}>
       <Text variant="heading">{t.home.startWithInterest}</Text>
-      <InterestChips onSelect={openPlanner} wrap={isWide} bleed={isWide ? 0 : gutter} />
+      <InterestChips onSelect={startWithInterest} wrap={isWide} bleed={isWide ? 0 : gutter} />
     </View>
   );
 

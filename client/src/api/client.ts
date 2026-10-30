@@ -1,4 +1,5 @@
 import type { City, RouteDetail, RouteQuery, RouteSummary } from '@/types/domain';
+import type { Plan, PlanRequest } from '@/types/plan';
 import { MOCK_CITIES, MOCK_ROUTES } from './mock-data';
 
 /**
@@ -131,11 +132,14 @@ function mockFeaturedRoutes(limit = 5): Promise<RouteSummary[]> {
 /** Raised for any non-2xx answer other than 404. */
 export class ApiError extends Error {
   readonly status: number;
+  /** Machine-readable code from the API envelope, e.g. `NOT_ENOUGH_PLACES`. */
+  readonly code: string | undefined;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -147,25 +151,46 @@ interface Page<T> {
   meta: { page: number; totalPages: number };
 }
 
-/** GET request against the API, mapping 404 to `NotFoundError` like the fixtures do. */
-async function apiGet<T>(path: string, resource: string): Promise<T> {
+/**
+ * One request against the API, mapping 404 to `NotFoundError` like the
+ * fixtures do. Cookies travel with it: the session lives in an httpOnly cookie.
+ */
+export async function apiRequest<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  resource: string,
+  body?: unknown,
+): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Accept: 'application/json' },
+    method,
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   if (response.status === 404) throw new NotFoundError(resource);
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
+    const envelope = (await response.json().catch(() => null)) as {
+      error?: { message?: string; code?: string };
     } | null;
     throw new ApiError(
       response.status,
-      body?.error?.message ?? `Request failed (${response.status})`,
+      envelope?.error?.message ?? `Request failed (${response.status})`,
+      envelope?.error?.code,
     );
   }
 
+  // 204 No Content carries no body to parse.
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+function apiGet<T>(path: string, resource: string): Promise<T> {
+  return apiRequest<T>('GET', path, resource);
 }
 
 function toSearchParams(query: RouteQuery, page: number): string {
@@ -241,4 +266,15 @@ export async function fetchFeaturedRoutes(limit = 5): Promise<RouteSummary[]> {
     'Featured routes',
   );
   return items;
+}
+
+/**
+ * Builds a walk from interests, budget and time. The fixtures carry no costs
+ * or visit times, so planning always needs the API.
+ */
+export async function fetchPlan(request: PlanRequest): Promise<Plan> {
+  if (isUsingMockData) {
+    throw new ApiError(503, 'The route planner needs the API (set EXPO_PUBLIC_API_URL).');
+  }
+  return apiRequest<Plan>('POST', '/routes/plan', 'Plan', request);
 }

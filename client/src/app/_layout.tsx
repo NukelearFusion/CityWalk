@@ -18,6 +18,7 @@ import { GlobalStyles } from '@/components/layout/global-styles';
 import { HeaderScrollProvider } from '@/components/layout/header-scroll';
 import { SiteHeader } from '@/components/layout/site-header';
 import { CityProvider } from '@/context/city';
+import { PlanProvider } from '@/context/plan';
 import { useLayout } from '@/hooks/use-layout';
 import { I18nProvider } from '@/i18n';
 import { useTheme } from '@/theme';
@@ -59,6 +60,13 @@ function RootNavigator() {
         <Stack.Screen name="route/[slug]/index" options={{ title: '' }} />
         <Stack.Screen name="route/[slug]/map" options={{ headerShown: false }} />
         <Stack.Screen name="route/[slug]/stop/[position]" options={{ headerShown: false }} />
+        <Stack.Screen name="plan/city" options={{ title: '' }} />
+        <Stack.Screen name="plan/interests" options={{ title: '' }} />
+        <Stack.Screen name="plan/budget" options={{ title: '' }} />
+        <Stack.Screen name="plan/time" options={{ title: '' }} />
+        <Stack.Screen name="plan/route/index" options={{ title: '' }} />
+        <Stack.Screen name="plan/route/map" options={{ headerShown: false }} />
+        <Stack.Screen name="plan/route/stop/[position]" options={{ headerShown: false }} />
       </Stack>
       {isWide ? <SiteHeader /> : null}
     </View>
@@ -105,11 +113,13 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <CityProvider>
-            <HeaderScrollProvider>
-              <SafeAreaProvider>
-                <RootNavigator />
-              </SafeAreaProvider>
-            </HeaderScrollProvider>
+            <PlanProvider>
+              <HeaderScrollProvider>
+                <SafeAreaProvider>
+                  <RootNavigator />
+                </SafeAreaProvider>
+              </HeaderScrollProvider>
+            </PlanProvider>
           </CityProvider>
         </I18nProvider>
       </QueryClientProvider>
