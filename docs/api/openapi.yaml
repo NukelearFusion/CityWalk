@@ -1,0 +1,4356 @@
+openapi: 3.1.0
+info:
+  title: Trasa MVP API
+  version: 1.1.0
+  description: 'Target contract for the revised diploma MVP, not a description of the existing server.
+    Public browsing/generation stays anonymous; user/admin share email verification and access/refresh
+    sessions, and only admin may access /admin/*. All success bodies use {data: ...}; empty successes
+    are 204. JSON bodies reject unknown properties and numeric strings. Unknown query parameters and nonempty
+    bodies on bodyless operations return 400. Lists are complete, unpaginated and deterministically ordered.
+    A syntactically valid collection filter without matches returns 200 with data: []; path resources
+    use 404 when missing/hidden and unsupported city body references on generation/creation/import use
+    422 CITY_NOT_SUPPORTED. POI search with an unsupported city returns an empty collection. IDs are opaque
+    strings. Polish content in MVP. HTTPS outside local development. All /auth/* and /user/me responses
+    (success/errors) require Cache-Control: no-store. Access tokens: 900 seconds; refresh sessions: 604800
+    seconds from login, non-rotating, revocable, never extended. Logout revokes one refresh session; access
+    tokens can survive up to 15 minutes. Password change invalidates all account access/refresh sessions
+    immediately. Do not log/expose passwords, verification codes or tokens. Protect refresh credentials
+    at rest (prefer non-recoverable verifiers rather than plaintext), without exposing storage internals.
+    Native clients keep refresh tokens in platform secure storage. Transport examples are illustrative
+    and not provider-verified walking paths.'
+servers:
+- url: /api/v1
+  description: Same-origin base path; use an absolute deployment origin in native client configuration.
+- url: http://localhost:4000/api/v1
+  description: Local development; a physical phone uses the host LAN address instead of localhost.
+security: []
+tags:
+- name: Reference data
+- name: Routes
+- name: Places
+- name: Generation
+- name: Authentication
+- name: Admin Places
+- name: Admin Routes
+- name: Current user
+paths:
+  /cities:
+    get:
+      tags:
+      - Reference data
+      operationId: listCities
+      summary: List supported cities
+      description: Unpaginated collection; initial supported city is Poznań. Stable ordering by name then
+        ID. No city CRUD.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitiesResponse'
+              example:
+                data:
+                - id: city_poznan
+                  name: Poznań
+                  description: Spacery po historycznym centrum Poznania.
+                  centerLatitude: 52.4083
+                  centerLongitude: 16.9342
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /categories:
+    get:
+      tags:
+      - Reference data
+      operationId: listCategories
+      summary: List interest categories
+      description: Returns sightseeing, food, entertainment, nature in this order, with Polish display
+        names. No category CRUD.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+              example:
+                data:
+                - id: sightseeing
+                  name: Zwiedzanie
+                - id: food
+                  name: Jedzenie
+                - id: entertainment
+                  name: Rozrywka
+                - id: nature
+                  name: Przyroda
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /routes:
+    get:
+      tags:
+      - Routes
+      operationId: listRoutes
+      summary: List published curated routes
+      description: 'Compact unpaginated summaries. Home can show the first few entries. Stable title-then-ID
+        order; not a popularity ranking. Empty matches return data: []. Only cityId is supported; unknown
+        query parameters return 400. No category filter is needed for the revised MVP.'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutesResponse'
+              examples:
+                routes:
+                  value:
+                    data:
+                    - id: route_stare_miasto
+                      city:
+                        id: city_poznan
+                        name: Poznań
+                      title: Serce Starego Miasta
+                      shortDescription: Krótki spacer od Rynku do Fary.
+                      imageUrl: null
+                      categoryIds:
+                      - sightseeing
+                      statistics:
+                        distanceMeters: 250
+                        walkingDurationMinutes: 4
+                        visitDurationMinutes: 60
+                        totalDurationMinutes: 64
+                        estimatedCostPln: 0
+                        stopCount: 2
+                noMatches:
+                  value:
+                    data: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      parameters:
+      - name: cityId
+        in: query
+        required: false
+        description: 'Exact city ID. Any syntactically valid ID with no matches, including an unknown
+          city, returns 200 with data: []. Omitted returns all published routes.'
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /routes/{routeId}:
+    get:
+      tags:
+      - Routes
+      operationId: getRoute
+      summary: Get a published route
+      description: One response supplies all route details, ordered embedded Places, statistics and routed
+        geometry. Drafts are not public.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuratedRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics:
+                    distanceMeters: 250
+                    walkingDurationMinutes: 4
+                    visitDurationMinutes: 60
+                    totalDurationMinutes: 64
+                    estimatedCostPln: 0
+                    stopCount: 2
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops:
+                  - position: 1
+                    place:
+                      id: place_stary_rynek
+                      cityId: city_poznan
+                      name: Stary Rynek
+                      description: Historyczny rynek z renesansowym ratuszem.
+                      address: Stary Rynek, Poznań
+                      latitude: 52.4083
+                      longitude: 16.9342
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                  - position: 2
+                    place:
+                      id: place_fara
+                      cityId: city_poznan
+                      name: Fara Poznańska
+                      description: Barokowa bazylika przy ulicy Gołębiej.
+                      address: ul. Gołębia 1, Poznań
+                      latitude: 52.4065
+                      longitude: 16.9345
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                  geometry:
+                    type: LineString
+                    coordinates:
+                    - - 16.9342
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4075
+                    - - 16.9348
+                      - 52.4068
+                    - - 16.9345
+                      - 52.4065
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /places/{placeId}:
+    get:
+      tags:
+      - Places
+      operationId: getPlace
+      summary: Get an available Place
+      description: Independent Place details; not scoped to a route. Unavailable Places are not public.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceResponse'
+              example:
+                data:
+                  id: place_stary_rynek
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: Historyczny rynek z renesansowym ratuszem.
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds:
+                  - sightseeing
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      parameters:
+      - name: placeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /route-generator:
+    post:
+      tags:
+      - Generation
+      operationId: generateRoute
+      summary: Generate a complete personalized walk
+      description: Anonymous synchronous generation. At least two distinct available same-city Places,
+        each matching at least one selected category (OR); selected categories need not all be represented.
+        Prefer broader requested coverage among equally feasible choices, without prescribing ranking.
+        Respect hard budget/time/intensity limits and optional excludePlaceIds. Unknown/external-city
+        exclusion IDs are ignored; no excluded ID may appear. 422 CITY_NOT_SUPPORTED for unsupported city;
+        422 NO_FEASIBLE_ROUTE when no valid result remains. 502/503 is provider failure, not infeasibility.
+        Repeating identical inputs can return the same walk. No persistence, polling, job ID or frontend
+        distance calculation.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedRouteResponse'
+              examples:
+                route:
+                  value:
+                    data:
+                      city:
+                        id: city_poznan
+                        name: Poznań
+                      title: Serce Starego Miasta
+                      categoryIds:
+                      - sightseeing
+                      statistics:
+                        distanceMeters: 250
+                        walkingDurationMinutes: 4
+                        visitDurationMinutes: 60
+                        totalDurationMinutes: 64
+                        estimatedCostPln: 0
+                        stopCount: 2
+                      stops:
+                      - position: 1
+                        place:
+                          id: place_stary_rynek
+                          cityId: city_poznan
+                          name: Stary Rynek
+                          description: Historyczny rynek z renesansowym ratuszem.
+                          address: Stary Rynek, Poznań
+                          latitude: 52.4083
+                          longitude: 16.9342
+                          categoryIds:
+                          - sightseeing
+                          visitDurationMinutes: 30
+                          estimatedCostPln: 0
+                          imageUrl: null
+                      - position: 2
+                        place:
+                          id: place_fara
+                          cityId: city_poznan
+                          name: Fara Poznańska
+                          description: Barokowa bazylika przy ulicy Gołębiej.
+                          address: ul. Gołębia 1, Poznań
+                          latitude: 52.4065
+                          longitude: 16.9345
+                          categoryIds:
+                          - sightseeing
+                          visitDurationMinutes: 30
+                          estimatedCostPln: 0
+                          imageUrl: null
+                      geometry:
+                        type: LineString
+                        coordinates:
+                        - - 16.9342
+                          - 52.4083
+                        - - 16.9348
+                          - 52.4083
+                        - - 16.9348
+                          - 52.4075
+                        - - 16.9348
+                          - 52.4068
+                        - - 16.9345
+                          - 52.4065
+                subsetOfRequestedInterests:
+                  summary: Valid for sightseeing + food when only sightseeing is feasible
+                  value:
+                    data:
+                      city:
+                        id: city_poznan
+                        name: Poznań
+                      title: Serce Starego Miasta
+                      categoryIds:
+                      - sightseeing
+                      statistics:
+                        distanceMeters: 250
+                        walkingDurationMinutes: 4
+                        visitDurationMinutes: 60
+                        totalDurationMinutes: 64
+                        estimatedCostPln: 0
+                        stopCount: 2
+                      stops:
+                      - position: 1
+                        place:
+                          id: place_stary_rynek
+                          cityId: city_poznan
+                          name: Stary Rynek
+                          description: Historyczny rynek z renesansowym ratuszem.
+                          address: Stary Rynek, Poznań
+                          latitude: 52.4083
+                          longitude: 16.9342
+                          categoryIds:
+                          - sightseeing
+                          visitDurationMinutes: 30
+                          estimatedCostPln: 0
+                          imageUrl: null
+                      - position: 2
+                        place:
+                          id: place_fara
+                          cityId: city_poznan
+                          name: Fara Poznańska
+                          description: Barokowa bazylika przy ulicy Gołębiej.
+                          address: ul. Gołębia 1, Poznań
+                          latitude: 52.4065
+                          longitude: 16.9345
+                          categoryIds:
+                          - sightseeing
+                          visitDurationMinutes: 30
+                          estimatedCostPln: 0
+                          imageUrl: null
+                      geometry:
+                        type: LineString
+                        coordinates:
+                        - - 16.9342
+                          - 52.4083
+                        - - 16.9348
+                          - 52.4083
+                        - - 16.9348
+                          - 52.4075
+                        - - 16.9348
+                          - 52.4068
+                        - - 16.9345
+                          - 52.4065
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          description: 'Unsupported city or no feasible route respecting preferences, hard limits and
+            exclusions. Codes: CITY_NOT_SUPPORTED, NO_FEASIBLE_ROUTE.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CITY_NOT_SUPPORTED:
+                  summary: CITY_NOT_SUPPORTED
+                  value:
+                    error:
+                      code: CITY_NOT_SUPPORTED
+                      message: Selected city is not supported
+                NO_FEASIBLE_ROUTE:
+                  summary: NO_FEASIBLE_ROUTE
+                  value:
+                    error:
+                      code: NO_FEASIBLE_ROUTE
+                      message: No route satisfies the requested limits and exclusions
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '502':
+          $ref: '#/components/responses/ProviderFailure'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRouteRequest'
+            examples:
+              basic:
+                value:
+                  cityId: city_poznan
+                  categoryIds:
+                  - sightseeing
+                  budgetPln: 150
+                  maxMinutes: 180
+                  walkingIntensity: medium
+              anotherVariant:
+                summary: Try another variant; excluded Place IDs are hard constraints
+                value:
+                  cityId: city_poznan
+                  categoryIds:
+                  - sightseeing
+                  - food
+                  budgetPln: 150
+                  maxMinutes: 180
+                  walkingIntensity: medium
+                  excludePlaceIds:
+                  - place_previous_cafe
+  /auth/login:
+    post:
+      tags:
+      - Authentication
+      operationId: login
+      summary: Log in as user or administrator
+      description: Shared credentials exchange for user/admin. Verified enabled accounts receive access
+        (900 seconds) and refresh (604800 seconds from login) credentials. Invalid email/password combinations,
+        unknown and disabled accounts share 401 UNAUTHORIZED. A correct password on an unverified account
+        returns 403 EMAIL_NOT_VERIFIED and no session. Each successful login creates its own refresh session.
+        Maximum 10 attempts/15 minutes per normalized email and 30/15 minutes per source IP, enforced
+        independently of account existence; 429 includes Retry-After. No cookie, MFA, device or role-selection
+        flow.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSessionResponse'
+              example:
+                data:
+                  accessToken: example-access-token-not-a-real-credential
+                  refreshToken: example-refresh-token-not-a-real-credential
+                  tokenType: Bearer
+                  expiresIn: 900
+                  refreshExpiresAt: '2026-11-16T12:00:00Z'
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+            failure. Numeric strings are not accepted in JSON bodies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '401':
+          description: Missing, invalid or expired access credential, invalid login, or expired/revoked/invalid
+            refresh session. Refresh tokens never authenticate bearer-protected operations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: UNAUTHORIZED
+                  message: Authentication failed or session is invalid
+          headers:
+            WWW-Authenticate:
+              description: Bearer challenge.
+              schema:
+                type: string
+              example: Bearer realm="trasa"
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '403':
+          description: 'Correct password, but email verification is required. Codes: EMAIL_NOT_VERIFIED.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                EMAIL_NOT_VERIFIED:
+                  summary: EMAIL_NOT_VERIFIED
+                  value:
+                    error:
+                      code: EMAIL_NOT_VERIFIED
+                      message: Verify your email before logging in
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: user@example.com
+              password: a-long-example-password
+  /admin/places:
+    get:
+      tags:
+      - Admin Places
+      operationId: listAdminPlaces
+      summary: List all Places
+      description: Unpaginated available and unavailable Places from all supported cities, stable name-then-ID
+        order. Includes fields needed to select stops and edit availability; filter small lists locally.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlacesResponse'
+              example:
+                data:
+                - id: place_stary_rynek
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: Historyczny rynek z renesansowym ratuszem.
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds:
+                  - sightseeing
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+                  isAvailable: true
+                  providerIdentity: null
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Admin Places
+      operationId: createPlace
+      summary: Create an independent Place
+      description: Creates a reusable Place with requested availability. Availability requires nonempty
+        description/address and at least one category. Eligibility is independent of curated-route membership.
+        Unknown city reference returns 422 CITY_NOT_SUPPORTED with cityId issue.
+      responses:
+        '201':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceResponse'
+              example:
+                data:
+                  id: place_stary_rynek
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: Historyczny rynek z renesansowym ratuszem.
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds:
+                  - sightseeing
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+                  isAvailable: true
+                  providerIdentity: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          description: 'Unknown city body reference. Codes: CITY_NOT_SUPPORTED.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CITY_NOT_SUPPORTED:
+                  summary: CITY_NOT_SUPPORTED
+                  value:
+                    error:
+                      code: CITY_NOT_SUPPORTED
+                      message: Selected city is not supported
+                      issues:
+                      - path: cityId
+                        message: City is not supported
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceWrite'
+            example:
+              cityId: city_poznan
+              name: Stary Rynek
+              description: Historyczny rynek z renesansowym ratuszem.
+              address: Stary Rynek, Poznań
+              latitude: 52.4083
+              longitude: 16.9342
+              categoryIds:
+              - sightseeing
+              visitDurationMinutes: 30
+              estimatedCostPln: 0
+              imageUrl: null
+              isAvailable: true
+  /admin/places/{placeId}:
+    get:
+      tags:
+      - Admin Places
+      operationId: getAdminPlace
+      summary: Get a Place for editing
+      description: Includes availability and provider identity.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceResponse'
+              example:
+                data:
+                  id: place_stary_rynek
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: Historyczny rynek z renesansowym ratuszem.
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds:
+                  - sightseeing
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+                  isAvailable: true
+                  providerIdentity: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: placeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+    put:
+      tags:
+      - Admin Places
+      operationId: replacePlace
+      summary: Replace editable Place fields
+      description: Full editable-field replacement; omitted imageUrl clears it, identity/providerIdentity
+        remain unchanged. cityId is immutable (409 PLACE_CITY_CONFLICT). Safe changes to name, description,
+        address, imageUrl and categoryIds are allowed even when published routes reference this Place;
+        update embedded Place data and derived route category unions consistently before acknowledging
+        success. Compare normalized values, not merely presence of keys. If latitude, longitude, isAvailable,
+        estimatedCostPln or visitDurationMinutes actually changes and ANY dependent route is published,
+        reject the whole write with 409 PLACE_IN_PUBLISHED_ROUTE; unpublish those routes first. Such changes
+        on draft-only dependencies invalidate geometry/statistics together. Safe-only edits leave geometry/statistics
+        unchanged. Never return a partial write or stale public categories/Place data.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceResponse'
+              example:
+                data:
+                  id: place_stary_rynek
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: Historyczny rynek z renesansowym ratuszem.
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds:
+                  - sightseeing
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+                  isAvailable: true
+                  providerIdentity: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 'Operation conflicts with current resource state; no write is applied. Codes: PLACE_CITY_CONFLICT,
+            PLACE_IN_PUBLISHED_ROUTE.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PLACE_CITY_CONFLICT:
+                  summary: PLACE_CITY_CONFLICT
+                  value:
+                    error:
+                      code: PLACE_CITY_CONFLICT
+                      message: A Place cannot be moved to another city
+                PLACE_IN_PUBLISHED_ROUTE:
+                  summary: PLACE_IN_PUBLISHED_ROUTE
+                  value:
+                    error:
+                      code: PLACE_IN_PUBLISHED_ROUTE
+                      message: Unpublish dependent routes before changing coordinates, availability, cost
+                        or visit duration
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceWrite'
+            example:
+              cityId: city_poznan
+              name: Stary Rynek
+              description: Historyczny rynek z renesansowym ratuszem.
+              address: Stary Rynek, Poznań
+              latitude: 52.4083
+              longitude: 16.9342
+              categoryIds:
+              - sightseeing
+              visitDurationMinutes: 30
+              estimatedCostPln: 0
+              imageUrl: null
+              isAvailable: true
+      parameters:
+      - name: placeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+    delete:
+      tags:
+      - Admin Places
+      operationId: deletePlace
+      summary: Delete an unreferenced Place
+      description: Any draft or published curated-route reference blocks deletion with 409 PLACE_IN_USE.
+        Remove memberships first. Previously generated client-held results are snapshots and do not block
+        deletion.
+      responses:
+        '204':
+          description: Deleted. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 'Operation conflicts with current resource state; no write is applied. Codes: PLACE_IN_USE.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PLACE_IN_USE:
+                  summary: PLACE_IN_USE
+                  value:
+                    error:
+                      code: PLACE_IN_USE
+                      message: Place is referenced by a curated route
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: placeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /admin/places/search:
+    post:
+      tags:
+      - Admin Places
+      operationId: searchPois
+      summary: Search external POIs
+      description: 'City-scoped text search returning at most 10 candidates in provider relevance order;
+        never persists Places. No matches or a syntactically valid unknown city returns 200 with data:
+        [] (no provider call for an unsupported city). Invalid request shape is 400; actual provider failures
+        are 502/503.'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiCandidatesResponse'
+              example:
+                data:
+                - providerIdentity:
+                    provider: poi_catalog
+                    providerPlaceId: poznan-123
+                  name: Stary Rynek
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '502':
+          $ref: '#/components/responses/ProviderFailure'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoiSearchRequest'
+            example:
+              cityId: city_poznan
+              query: Stary Rynek
+  /admin/places/import:
+    post:
+      tags:
+      - Admin Places
+      operationId: importPoi
+      summary: Import a selected POI
+      description: 'Creates an unavailable, editable Place (201). The (provider, providerPlaceId) pair
+        identifies an import: retrying returns the existing Place unchanged (200), including when unavailable;
+        concurrent duplicate imports must not create two Places. Existing identity associated with another
+        city returns 409 PROVIDER_PLACE_CITY_CONFLICT. Unknown city returns 422 CITY_NOT_SUPPORTED; candidate
+        missing or outside selected city returns 422 POI_NOT_FOUND. Unknown provider is 400 VALIDATION_ERROR.
+        Fetching provider data fails with 502/503, without partial import. For an existing provider identity
+        in the same city, return the internal Place without requiring a successful provider lookup; provider
+        downtime must not defeat idempotent retries. Missing provider name or valid coordinates is unusable
+        provider data (502), never a fabricated placeholder. Missing optional address/description/image
+        uses the documented empty/null defaults.'
+      responses:
+        '201':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceResponse'
+              example:
+                data:
+                  id: place_imported_123
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: ''
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds: []
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+                  isAvailable: false
+                  providerIdentity:
+                    provider: poi_catalog
+                    providerPlaceId: poznan-123
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: 'Operation conflicts with current resource state; no write is applied. Codes: PROVIDER_PLACE_CITY_CONFLICT.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PROVIDER_PLACE_CITY_CONFLICT:
+                  summary: PROVIDER_PLACE_CITY_CONFLICT
+                  value:
+                    error:
+                      code: PROVIDER_PLACE_CITY_CONFLICT
+                      message: This provider Place is already imported into another city
+        '422':
+          description: 'Unsupported city or candidate missing/outside the selected city. Codes: CITY_NOT_SUPPORTED,
+            POI_NOT_FOUND.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CITY_NOT_SUPPORTED:
+                  summary: CITY_NOT_SUPPORTED
+                  value:
+                    error:
+                      code: CITY_NOT_SUPPORTED
+                      message: Selected city is not supported
+                POI_NOT_FOUND:
+                  summary: POI_NOT_FOUND
+                  value:
+                    error:
+                      code: POI_NOT_FOUND
+                      message: Candidate is unavailable in the selected city
+        '502':
+          $ref: '#/components/responses/ProviderFailure'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: Already imported; returns the existing internal Place without overwriting administrator
+            edits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPlaceResponse'
+              example:
+                data:
+                  id: place_imported_123
+                  cityId: city_poznan
+                  name: Stary Rynek
+                  description: ''
+                  address: Stary Rynek, Poznań
+                  latitude: 52.4083
+                  longitude: 16.9342
+                  categoryIds: []
+                  visitDurationMinutes: 30
+                  estimatedCostPln: 0
+                  imageUrl: null
+                  isAvailable: false
+                  providerIdentity:
+                    provider: poi_catalog
+                    providerPlaceId: poznan-123
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoiImportRequest'
+            example:
+              cityId: city_poznan
+              providerIdentity:
+                provider: poi_catalog
+                providerPlaceId: poznan-123
+  /admin/routes:
+    get:
+      tags:
+      - Admin Routes
+      operationId: listAdminRoutes
+      summary: List draft and published routes
+      description: Unpaginated compact summaries across supported cities, stable title-then-ID order.
+        Draft statistics can be null.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRoutesResponse'
+              example:
+                data:
+                - id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics:
+                    distanceMeters: 250
+                    walkingDurationMinutes: 4
+                    visitDurationMinutes: 60
+                    totalDurationMinutes: 64
+                    estimatedCostPln: 0
+                    stopCount: 2
+                  status: published
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+    post:
+      tags:
+      - Admin Routes
+      operationId: createRoute
+      summary: Create an unpublished draft
+      description: New draft has zero stops and null geometry/statistics. Unknown city reference returns
+        422 CITY_NOT_SUPPORTED with cityId issue.
+      responses:
+        '201':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds: []
+                  statistics: null
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops: []
+                  geometry: null
+                  status: draft
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          description: 'Unknown city body reference. Codes: CITY_NOT_SUPPORTED.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CITY_NOT_SUPPORTED:
+                  summary: CITY_NOT_SUPPORTED
+                  value:
+                    error:
+                      code: CITY_NOT_SUPPORTED
+                      message: Selected city is not supported
+                      issues:
+                      - path: cityId
+                        message: City is not supported
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteMetadataWrite'
+            example:
+              cityId: city_poznan
+              title: Serce Starego Miasta
+              shortDescription: Krótki spacer od Rynku do Fary.
+              description: Spacer po historycznym centrum z czasem na zwiedzanie.
+              imageUrl: null
+  /admin/routes/{routeId}:
+    get:
+      tags:
+      - Admin Routes
+      operationId: getAdminRoute
+      summary: Get complete admin route
+      description: All metadata, embedded Places, stops and any valid geometry/statistics needed by the
+        editor.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics:
+                    distanceMeters: 250
+                    walkingDurationMinutes: 4
+                    visitDurationMinutes: 60
+                    totalDurationMinutes: 64
+                    estimatedCostPln: 0
+                    stopCount: 2
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops:
+                  - position: 1
+                    place:
+                      id: place_stary_rynek
+                      cityId: city_poznan
+                      name: Stary Rynek
+                      description: Historyczny rynek z renesansowym ratuszem.
+                      address: Stary Rynek, Poznań
+                      latitude: 52.4083
+                      longitude: 16.9342
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  - position: 2
+                    place:
+                      id: place_fara
+                      cityId: city_poznan
+                      name: Fara Poznańska
+                      description: Barokowa bazylika przy ulicy Gołębiej.
+                      address: ul. Gołębia 1, Poznań
+                      latitude: 52.4065
+                      longitude: 16.9345
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  geometry:
+                    type: LineString
+                    coordinates:
+                    - - 16.9342
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4075
+                    - - 16.9348
+                      - 52.4068
+                    - - 16.9345
+                      - 52.4065
+                  status: published
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+    put:
+      tags:
+      - Admin Routes
+      operationId: replaceRouteMetadata
+      summary: Replace draft route metadata
+      description: Only drafts can be edited; otherwise 409 ROUTE_PUBLISHED. Full editable metadata replacement.
+        Changing city with stops returns 409 ROUTE_CITY_CONFLICT. Unknown city reference is 422 CITY_NOT_SUPPORTED
+        with cityId issue. Status and stops are unchanged; categories/statistics/geometry are not writable.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics:
+                    distanceMeters: 250
+                    walkingDurationMinutes: 4
+                    visitDurationMinutes: 60
+                    totalDurationMinutes: 64
+                    estimatedCostPln: 0
+                    stopCount: 2
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops:
+                  - position: 1
+                    place:
+                      id: place_stary_rynek
+                      cityId: city_poznan
+                      name: Stary Rynek
+                      description: Historyczny rynek z renesansowym ratuszem.
+                      address: Stary Rynek, Poznań
+                      latitude: 52.4083
+                      longitude: 16.9342
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  - position: 2
+                    place:
+                      id: place_fara
+                      cityId: city_poznan
+                      name: Fara Poznańska
+                      description: Barokowa bazylika przy ulicy Gołębiej.
+                      address: ul. Gołębia 1, Poznań
+                      latitude: 52.4065
+                      longitude: 16.9345
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  geometry:
+                    type: LineString
+                    coordinates:
+                    - - 16.9342
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4075
+                    - - 16.9348
+                      - 52.4068
+                    - - 16.9345
+                      - 52.4065
+                  status: draft
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 'Operation conflicts with current resource state; no write is applied. Codes: ROUTE_PUBLISHED,
+            ROUTE_CITY_CONFLICT.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ROUTE_PUBLISHED:
+                  summary: ROUTE_PUBLISHED
+                  value:
+                    error:
+                      code: ROUTE_PUBLISHED
+                      message: Unpublish the route before editing or deleting it
+                ROUTE_CITY_CONFLICT:
+                  summary: ROUTE_CITY_CONFLICT
+                  value:
+                    error:
+                      code: ROUTE_CITY_CONFLICT
+                      message: Remove all stops before changing the route city
+        '422':
+          description: 'Unknown city body reference. Codes: CITY_NOT_SUPPORTED.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CITY_NOT_SUPPORTED:
+                  summary: CITY_NOT_SUPPORTED
+                  value:
+                    error:
+                      code: CITY_NOT_SUPPORTED
+                      message: Selected city is not supported
+                      issues:
+                      - path: cityId
+                        message: City is not supported
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteMetadataWrite'
+            example:
+              cityId: city_poznan
+              title: Serce Starego Miasta
+              shortDescription: Krótki spacer od Rynku do Fary.
+              description: Spacer po historycznym centrum z czasem na zwiedzanie.
+              imageUrl: null
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+    delete:
+      tags:
+      - Admin Routes
+      operationId: deleteRoute
+      summary: Delete an unpublished route
+      description: Published routes must be unpublished first (409 ROUTE_PUBLISHED). Deletes route and
+        memberships only; Place resources remain.
+      responses:
+        '204':
+          description: Deleted. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 'Operation conflicts with current resource state; no write is applied. Codes: ROUTE_PUBLISHED.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ROUTE_PUBLISHED:
+                  summary: ROUTE_PUBLISHED
+                  value:
+                    error:
+                      code: ROUTE_PUBLISHED
+                      message: Unpublish the route before editing or deleting it
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /admin/routes/{routeId}/stops:
+    put:
+      tags:
+      - Admin Routes
+      operationId: replaceRouteStops
+      summary: Replace all ordered stops
+      description: Drafts only (409 ROUTE_PUBLISHED otherwise). Array order determines positions 1..n;
+        additions/removals/reordering are one atomic operation. Unknown Place IDs return 422 PLACE_NOT_FOUND
+        and cross-city IDs 422 PLACE_CITY_MISMATCH, with placeIds.index issues. Unavailable Places may
+        be selected in a draft but block publication. Changed membership/order clears geometry and statistics
+        together; publish computes a valid path. Repeating the same ordered list preserves an already
+        valid result.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics: null
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops:
+                  - position: 1
+                    place:
+                      id: place_stary_rynek
+                      cityId: city_poznan
+                      name: Stary Rynek
+                      description: Historyczny rynek z renesansowym ratuszem.
+                      address: Stary Rynek, Poznań
+                      latitude: 52.4083
+                      longitude: 16.9342
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  - position: 2
+                    place:
+                      id: place_fara
+                      cityId: city_poznan
+                      name: Fara Poznańska
+                      description: Barokowa bazylika przy ulicy Gołębiej.
+                      address: ul. Gołębia 1, Poznań
+                      latitude: 52.4065
+                      longitude: 16.9345
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  geometry: null
+                  status: draft
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 'Operation conflicts with current resource state; no write is applied. Codes: ROUTE_PUBLISHED.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ROUTE_PUBLISHED:
+                  summary: ROUTE_PUBLISHED
+                  value:
+                    error:
+                      code: ROUTE_PUBLISHED
+                      message: Unpublish the route before editing or deleting it
+        '422':
+          description: 'Invalid ordered Place reference; reject entire replacement. Codes: PLACE_NOT_FOUND,
+            PLACE_CITY_MISMATCH.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PLACE_NOT_FOUND:
+                  summary: PLACE_NOT_FOUND
+                  value:
+                    error:
+                      code: PLACE_NOT_FOUND
+                      message: One or more selected Places do not exist
+                      issues:
+                      - path: placeIds.1
+                        message: Place must exist in the route city
+                PLACE_CITY_MISMATCH:
+                  summary: PLACE_CITY_MISMATCH
+                  value:
+                    error:
+                      code: PLACE_CITY_MISMATCH
+                      message: Selected Place belongs to another city
+                      issues:
+                      - path: placeIds.1
+                        message: Place must exist in the route city
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceRouteStopsRequest'
+            example:
+              placeIds:
+              - place_stary_rynek
+              - place_fara
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /admin/routes/{routeId}/publish:
+    post:
+      tags:
+      - Admin Routes
+      operationId: publishRoute
+      summary: Publish a ready curated route
+      description: Requires at least two distinct available Places, nonempty title/shortDescription/description,
+        one city, and valid walking geometry with consistent statistics. Computes missing routing data
+        synchronously. Content not ready or no walkable connection returns 422 ROUTE_NOT_READY with field/readiness
+        issues. Provider failure returns 502/503, not readiness failure. Failure leaves route unchanged.
+        Already published returns the current route (200). Success makes route public immediately. No
+        request body.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics:
+                    distanceMeters: 250
+                    walkingDurationMinutes: 4
+                    visitDurationMinutes: 60
+                    totalDurationMinutes: 64
+                    estimatedCostPln: 0
+                    stopCount: 2
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops:
+                  - position: 1
+                    place:
+                      id: place_stary_rynek
+                      cityId: city_poznan
+                      name: Stary Rynek
+                      description: Historyczny rynek z renesansowym ratuszem.
+                      address: Stary Rynek, Poznań
+                      latitude: 52.4083
+                      longitude: 16.9342
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  - position: 2
+                    place:
+                      id: place_fara
+                      cityId: city_poznan
+                      name: Fara Poznańska
+                      description: Barokowa bazylika przy ulicy Gołębiej.
+                      address: ul. Gołębia 1, Poznań
+                      latitude: 52.4065
+                      longitude: 16.9345
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  geometry:
+                    type: LineString
+                    coordinates:
+                    - - 16.9342
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4075
+                    - - 16.9348
+                      - 52.4068
+                    - - 16.9345
+                      - 52.4065
+                  status: published
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: 'Valid request cannot be applied. See operation description for applicable codes
+            and field paths. Applicable error codes: ROUTE_NOT_READY.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: ROUTE_NOT_READY
+                  message: Route is incomplete or has no walkable connection
+                  issues:
+                  - path: stops
+                    message: Select at least two available Places
+        '502':
+          $ref: '#/components/responses/ProviderFailure'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /admin/routes/{routeId}/unpublish:
+    post:
+      tags:
+      - Admin Routes
+      operationId: unpublishRoute
+      summary: Unpublish a curated route
+      description: Sets status to draft; disappears from public list and public GET returns 404. Already
+        draft is a successful no-op. Keeps Places, memberships and still-valid geometry/statistics for
+        editing. No request body.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRouteResponse'
+              example:
+                data:
+                  id: route_stare_miasto
+                  city:
+                    id: city_poznan
+                    name: Poznań
+                  title: Serce Starego Miasta
+                  shortDescription: Krótki spacer od Rynku do Fary.
+                  imageUrl: null
+                  categoryIds:
+                  - sightseeing
+                  statistics:
+                    distanceMeters: 250
+                    walkingDurationMinutes: 4
+                    visitDurationMinutes: 60
+                    totalDurationMinutes: 64
+                    estimatedCostPln: 0
+                    stopCount: 2
+                  description: Spacer po historycznym centrum z czasem na zwiedzanie.
+                  stops:
+                  - position: 1
+                    place:
+                      id: place_stary_rynek
+                      cityId: city_poznan
+                      name: Stary Rynek
+                      description: Historyczny rynek z renesansowym ratuszem.
+                      address: Stary Rynek, Poznań
+                      latitude: 52.4083
+                      longitude: 16.9342
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  - position: 2
+                    place:
+                      id: place_fara
+                      cityId: city_poznan
+                      name: Fara Poznańska
+                      description: Barokowa bazylika przy ulicy Gołębiej.
+                      address: ul. Gołębia 1, Poznań
+                      latitude: 52.4065
+                      longitude: 16.9345
+                      categoryIds:
+                      - sightseeing
+                      visitDurationMinutes: 30
+                      estimatedCostPln: 0
+                      imageUrl: null
+                      isAvailable: true
+                      providerIdentity: null
+                  geometry:
+                    type: LineString
+                    coordinates:
+                    - - 16.9342
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4083
+                    - - 16.9348
+                      - 52.4075
+                    - - 16.9348
+                      - 52.4068
+                    - - 16.9345
+                      - 52.4065
+                  status: draft
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceId'
+  /auth/register:
+    post:
+      tags:
+      - Authentication
+      operationId: registerUser
+      summary: Register a regular user
+      description: Validate and normalize email, validate password, create a role user account with unverified
+        email only when new, and attempt email verification. Always return the same generic 202 for valid
+        new, existing unverified and existing verified addresses; never return a duplicate-account conflict,
+        overwrite existing credentials, or issue tokens. Existing-account registration does not implicitly
+        resend codes; use resend-verification. Register/resend share an email-delivery limit of one request
+        per 60 seconds and five per hour per normalized email; additionally at most 20 requests/hour per
+        source IP. Apply request counters and 429 responses identically to every address, including unknown/already-verified
+        accounts. If permitted, send only to an eligible unverified account. Generic 202 does not guarantee
+        delivery; delivery failures must not expose account existence or provider details. No delivery
+        job/status resource is exposed.
+      responses:
+        '202':
+          description: Accepted; verification is required before any session can be issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationRequiredResponse'
+              example:
+                data:
+                  verificationRequired: true
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+            failure. Numeric strings are not accepted in JSON bodies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              password: a-long-example-password
+  /auth/verify-email:
+    post:
+      tags:
+      - Authentication
+      operationId: verifyEmail
+      summary: Verify a one-time email code
+      description: The latest code expires 10 minutes after issuance and is single-use. A resend invalidates
+        older codes. Five failed attempts consume that code; request a new one. A successful verification
+        also consumes it. Unknown emails, already used/invalidated/exhausted codes, expired codes and
+        incorrect codes share 400 INVALID_VERIFICATION_CODE with the same message; do not expose attempt
+        counters or account state. Limit all verification submissions to 10/minute per source IP (429
+        independently of code/account validity). Success marks email verified but requires a separate
+        login.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationStatusResponse'
+              example:
+                data:
+                  emailVerified: true
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: 'Malformed input or unsuccessful verification; no account-existence distinctions.
+            Codes: VALIDATION_ERROR, INVALID_VERIFICATION_CODE.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    error:
+                      code: VALIDATION_ERROR
+                      message: Invalid request
+                INVALID_VERIFICATION_CODE:
+                  summary: INVALID_VERIFICATION_CODE
+                  value:
+                    error:
+                      code: INVALID_VERIFICATION_CODE
+                      message: Verification code is invalid or expired
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+            example:
+              email: user@example.com
+              code: '012345'
+  /auth/resend-verification:
+    post:
+      tags:
+      - Authentication
+      operationId: resendVerification
+      summary: Request another verification email
+      description: Always return generic 202 for syntactically valid requests that pass rate limits, whether
+        the address is unknown, verified or eligible. Existing passwords remain unchanged. Register/resend
+        share an email-delivery limit of one request per 60 seconds and five per hour per normalized email;
+        additionally at most 20 requests/hour per source IP. Apply request counters and 429 responses
+        identically to every address, including unknown/already-verified accounts. If permitted, send
+        only to an eligible unverified account. Generic 202 does not guarantee delivery; delivery failures
+        must not expose account existence or provider details. No delivery job/status resource is exposed.
+        The latest code expires 10 minutes after issuance and is single-use. A resend invalidates older
+        codes. Five failed attempts consume that code; request a new one. A successful verification also
+        consumes it. Unknown emails, already used/invalidated/exhausted codes, expired codes and incorrect
+        codes share 400 INVALID_VERIFICATION_CODE with the same message; do not expose attempt counters
+        or account state.
+      responses:
+        '202':
+          description: Accepted; does not reveal account state or delivery outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationRequiredResponse'
+              example:
+                data:
+                  verificationRequired: true
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+            failure. Numeric strings are not accepted in JSON bodies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+            example:
+              email: user@example.com
+  /auth/refresh:
+    post:
+      tags:
+      - Authentication
+      operationId: refreshSession
+      summary: Refresh access without rotating refresh token
+      description: 'Anonymous bearer-wise: the JSON refreshToken is the session credential. Check token
+        validity, original expiry, revocation and verified enabled account. Return 401 UNAUTHORIZED for
+        invalid/expired/revoked sessions, without creating a new session. Success issues a new 900-second
+        access token and returns the exact same refreshToken and original refreshExpiresAt. No rotation,
+        replacement refresh token, sliding expiry or expiry extension. Old access tokens may remain valid
+        until their own expiry. Maximum 60 requests/minute per source IP; 429 with Retry-After.'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSessionResponse'
+              example:
+                data:
+                  accessToken: example-new-access-token-not-a-real-credential
+                  refreshToken: example-refresh-token-not-a-real-credential
+                  tokenType: Bearer
+                  expiresIn: 900
+                  refreshExpiresAt: '2026-11-16T12:00:00Z'
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+            failure. Numeric strings are not accepted in JSON bodies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '401':
+          description: Missing, invalid or expired access credential, invalid login, or expired/revoked/invalid
+            refresh session. Refresh tokens never authenticate bearer-protected operations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: UNAUTHORIZED
+                  message: Authentication failed or session is invalid
+          headers:
+            WWW-Authenticate:
+              description: Bearer challenge.
+              schema:
+                type: string
+              example: Bearer realm="trasa"
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refreshToken: example-refresh-token-not-a-real-credential
+  /auth/logout:
+    post:
+      tags:
+      - Authentication
+      operationId: logoutSession
+      summary: Revoke the supplied refresh session
+      description: The JSON refreshToken identifies the current session; no access bearer is required
+        so logout still works after access expiry. Revoke this session server-side before 204; no subsequent
+        refresh may succeed. Syntactically valid unknown, expired or already revoked tokens also return
+        204 (idempotent, no existence disclosure). Other login sessions are unaffected. Already issued
+        access tokens remain valid until their expiry, at most 15 minutes; logout does not invalidate
+        them immediately. Client discards both tokens. If revocation cannot be completed, return 500 rather
+        than claiming success. Maximum 60 requests/minute per source IP; 429 with Retry-After.
+      responses:
+        '204':
+          description: Refresh session revoked or already unusable; no body.
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+            failure. Numeric strings are not accepted in JSON bodies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refreshToken: example-refresh-token-not-a-real-credential
+  /auth/change-password:
+    post:
+      tags:
+      - Authentication
+      operationId: changePassword
+      summary: Change password and require reauthentication
+      description: Requires valid bearer access for either role. Incorrect currentPassword returns 400
+        CURRENT_PASSWORD_INVALID. New password uses registration policy and must differ; same password
+        returns 400 VALIDATION_ERROR with newPassword issue. Update password and revoke all account refresh
+        sessions and access tokens together, including the caller; success 204 issues no new session.
+        Subsequent protected calls/refresh with old credentials return 401; log in again. If the change
+        cannot be completed, credentials remain unchanged. Maximum 5 attempts/15 minutes per authenticated
+        account and 30/15 minutes per IP; 429 with Retry-After.
+      responses:
+        '204':
+          description: Password changed and all account sessions invalidated. Log in again; no body.
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: 'Invalid new password/input or incorrect current password. Codes: VALIDATION_ERROR,
+            CURRENT_PASSWORD_INVALID.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                VALIDATION_ERROR:
+                  summary: VALIDATION_ERROR
+                  value:
+                    error:
+                      code: VALIDATION_ERROR
+                      message: Invalid request
+                CURRENT_PASSWORD_INVALID:
+                  summary: CURRENT_PASSWORD_INVALID
+                  value:
+                    error:
+                      code: CURRENT_PASSWORD_INVALID
+                      message: Current password is incorrect
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '401':
+          description: Missing, invalid or expired access credential, invalid login, or expired/revoked/invalid
+            refresh session. Refresh tokens never authenticate bearer-protected operations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: UNAUTHORIZED
+                  message: Authentication failed or session is invalid
+          headers:
+            WWW-Authenticate:
+              description: Bearer challenge.
+              schema:
+                type: string
+              example: Bearer realm="trasa"
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '429':
+          description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based
+            limits apply independently of whether the account exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: RATE_LIMITED
+                  message: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds until a retry is allowed.
+              schema:
+                type: integer
+                minimum: 1
+              example: 30
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              currentPassword: a-long-example-password
+              newPassword: another-long-example-password
+      security:
+      - BearerAuth: []
+  /user/me:
+    get:
+      tags:
+      - Current user
+      operationId: getCurrentUser
+      summary: Get the authenticated user
+      description: For either user/admin with a valid access bearer. Used to restore identity after login/refresh
+        and determine whether to show administration. Unknown query fields are 400. No profile editing
+        or additional account data. No expired, unverified or invalidated session can read this resource.
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+              examples:
+                user:
+                  value:
+                    data:
+                      id: user_123
+                      email: user@example.com
+                      emailVerified: true
+                      role: user
+                administrator:
+                  value:
+                    data:
+                      id: admin_123
+                      email: admin@example.com
+                      emailVerified: true
+                      role: admin
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '400':
+          description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+            failure. Numeric strings are not accepted in JSON bodies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '401':
+          description: Missing, invalid or expired access credential, invalid login, or expired/revoked/invalid
+            refresh session. Refresh tokens never authenticate bearer-protected operations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: UNAUTHORIZED
+                  message: Authentication failed or session is invalid
+          headers:
+            WWW-Authenticate:
+              description: Bearer challenge.
+              schema:
+                type: string
+              example: Bearer realm="trasa"
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+        '500':
+          description: Unexpected server failure. No implementation details are exposed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error
+          headers:
+            Cache-Control:
+              description: Never cache authentication/user responses, including errors and empty success
+                responses.
+              schema:
+                type: string
+                const: no-store
+              example: no-store
+      security:
+      - BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: 'Access token from login/refresh, sent as Authorization: Bearer <accessToken>. Valid
+        for 900 seconds. Both user/admin use this format. Refresh tokens are accepted only in JSON bodies
+        of /auth/refresh and /auth/logout, never as access credentials. Public browsing/generation ignores
+        credentials; /admin/* additionally requires role admin.'
+  schemas:
+    ResourceId:
+      type: string
+      minLength: 1
+      maxLength: 64
+      pattern: ^[A-Za-z0-9_-]+$
+      description: Opaque, case-sensitive stable string ID. Never parse it or derive it from a name/position.
+        Examples are illustrative, not reserved IDs.
+      examples:
+      - city_poznan
+    CategoryId:
+      type: string
+      enum:
+      - sightseeing
+      - food
+      - entertainment
+      - nature
+      description: Stable category IDs shared by Places and generation. Multiple selections mean mixed
+        interests; there is no mixed category.
+    MoneyPln:
+      type: integer
+      minimum: 0
+      maximum: 100000
+      description: Estimated PLN per person, in whole złoty. Zero means free. Estimates are planning inputs,
+        not guaranteed admission prices.
+    ImageUrl:
+      type:
+      - string
+      - 'null'
+      format: uri
+      maxLength: 2048
+      pattern: ^https://
+      description: One optional HTTPS image URL; null means no image. Omit on writes to clear it. No upload
+        or gallery API.
+    City:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - description
+      - centerLatitude
+      - centerLongitude
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 0
+          maxLength: 2000
+        centerLatitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        centerLongitude:
+          type: number
+          minimum: -180
+          maximum: 180
+      examples:
+      - id: city_poznan
+        name: Poznań
+        description: Spacery po historycznym centrum Poznania.
+        centerLatitude: 52.4083
+        centerLongitude: 16.9342
+    Category:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      properties:
+        id:
+          $ref: '#/components/schemas/CategoryId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+      description: Display name is Polish in MVP. API content is not localized by request headers.
+      examples:
+      - id: sightseeing
+        name: Zwiedzanie
+    Place:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - cityId
+      - name
+      - description
+      - address
+      - latitude
+      - longitude
+      - categoryIds
+      - visitDurationMinutes
+      - estimatedCostPln
+      - imageUrl
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        address:
+          type: string
+          minLength: 1
+          maxLength: 300
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+        visitDurationMinutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+        estimatedCostPln:
+          type: integer
+          minimum: 0
+          description: Estimated whole PLN per person; 0 means free. Review imported default estimates
+            before enabling availability.
+          maximum: 2000
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+      description: Public available Place; independent of route membership. Stable ID is also embedded
+        in route stops.
+      examples:
+      - id: place_stary_rynek
+        cityId: city_poznan
+        name: Stary Rynek
+        description: Historyczny rynek z renesansowym ratuszem.
+        address: Stary Rynek, Poznań
+        latitude: 52.4083
+        longitude: 16.9342
+        categoryIds:
+        - sightseeing
+        visitDurationMinutes: 30
+        estimatedCostPln: 0
+        imageUrl: null
+    ProviderIdentity:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - providerPlaceId
+      properties:
+        provider:
+          type: string
+          minLength: 1
+          maxLength: 80
+        providerPlaceId:
+          type: string
+          minLength: 1
+          maxLength: 256
+      description: Opaque provider namespace and identity from search. No provider-specific API payload
+        is exposed.
+      examples:
+      - provider: poi_catalog
+        providerPlaceId: poznan-123
+    AdminPlace:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - cityId
+      - name
+      - description
+      - address
+      - latitude
+      - longitude
+      - categoryIds
+      - visitDurationMinutes
+      - estimatedCostPln
+      - imageUrl
+      - isAvailable
+      - providerIdentity
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 0
+          maxLength: 5000
+        address:
+          type: string
+          minLength: 0
+          maxLength: 300
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 0
+          maxItems: 4
+          uniqueItems: true
+        visitDurationMinutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+        estimatedCostPln:
+          type: integer
+          minimum: 0
+          description: Estimated whole PLN per person; 0 means free. Review imported default estimates
+            before enabling availability.
+          maximum: 2000
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+        isAvailable:
+          type: boolean
+          description: True exposes this Place publicly and makes it eligible for generation, independently
+            of curated routes. False keeps it admin-only.
+        providerIdentity:
+          oneOf:
+          - $ref: '#/components/schemas/ProviderIdentity'
+          - type: 'null'
+      description: Unavailable Places may have empty descriptions, addresses and categories so imports
+        can be completed in a form. When available, public Place completeness rules apply. Safe metadata/category
+        changes propagate to embedded route data; coordinates, availability, cost or visit-duration changes
+        follow the published-dependency conflict rule on PUT.
+      allOf:
+      - if:
+          properties:
+            isAvailable:
+              const: true
+          required:
+          - isAvailable
+        then:
+          properties:
+            description:
+              minLength: 1
+            address:
+              minLength: 1
+            categoryIds:
+              minItems: 1
+      examples:
+      - id: place_stary_rynek
+        cityId: city_poznan
+        name: Stary Rynek
+        description: Historyczny rynek z renesansowym ratuszem.
+        address: Stary Rynek, Poznań
+        latitude: 52.4083
+        longitude: 16.9342
+        categoryIds:
+        - sightseeing
+        visitDurationMinutes: 30
+        estimatedCostPln: 0
+        imageUrl: null
+        isAvailable: true
+        providerIdentity: null
+    PlaceWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - cityId
+      - name
+      - description
+      - address
+      - latitude
+      - longitude
+      - categoryIds
+      - visitDurationMinutes
+      - estimatedCostPln
+      - isAvailable
+      properties:
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 0
+          maxLength: 5000
+        address:
+          type: string
+          minLength: 0
+          maxLength: 300
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 0
+          maxItems: 4
+          uniqueItems: true
+        visitDurationMinutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+        estimatedCostPln:
+          type: integer
+          minimum: 0
+          description: Estimated whole PLN per person; 0 means free. Review imported default estimates
+            before enabling availability.
+          maximum: 2000
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+        isAvailable:
+          type: boolean
+          description: True exposes this Place publicly and makes it eligible for generation, independently
+            of curated routes. False keeps it admin-only.
+      description: Complete editable Place fields for POST and PUT. Missing imageUrl is normalized to
+        null. Trim names/descriptions/addresses before checking lengths; whitespace-only required text
+        is invalid. cityId is immutable after creation (409 PLACE_CITY_CONFLICT).
+      allOf:
+      - if:
+          properties:
+            isAvailable:
+              const: true
+          required:
+          - isAvailable
+        then:
+          properties:
+            description:
+              minLength: 1
+            address:
+              minLength: 1
+            categoryIds:
+              minItems: 1
+      examples:
+      - cityId: city_poznan
+        name: Stary Rynek
+        description: Historyczny rynek z renesansowym ratuszem.
+        address: Stary Rynek, Poznań
+        latitude: 52.4083
+        longitude: 16.9342
+        categoryIds:
+        - sightseeing
+        visitDurationMinutes: 30
+        estimatedCostPln: 0
+        imageUrl: null
+        isAvailable: true
+    RouteStatistics:
+      type: object
+      additionalProperties: false
+      required:
+      - distanceMeters
+      - walkingDurationMinutes
+      - visitDurationMinutes
+      - totalDurationMinutes
+      - estimatedCostPln
+      - stopCount
+      properties:
+        distanceMeters:
+          type: integer
+          minimum: 0
+          description: Length of the routed pedestrian path, rounded up to whole metres; never great-circle
+            distance between stops.
+        walkingDurationMinutes:
+          type: integer
+          minimum: 0
+          description: Estimated walking minutes, rounded up to whole minutes.
+        visitDurationMinutes:
+          type: integer
+          minimum: 0
+          description: Sum of embedded Places' visitDurationMinutes.
+        totalDurationMinutes:
+          type: integer
+          minimum: 0
+          description: Exactly walkingDurationMinutes + visitDurationMinutes.
+        estimatedCostPln:
+          $ref: '#/components/schemas/MoneyPln'
+        stopCount:
+          type: integer
+          minimum: 0
+          maximum: 50
+      description: Same meanings for curated and generated routes. Cost is the sum of Place costs. Constraints
+        use these returned rounded values, not lower unrounded estimates. No travel before the first or
+        after the last stop is included.
+      examples:
+      - distanceMeters: 250
+        walkingDurationMinutes: 4
+        visitDurationMinutes: 60
+        totalDurationMinutes: 64
+        estimatedCostPln: 0
+        stopCount: 2
+    WalkingGeometry:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - coordinates
+      properties:
+        type:
+          type: string
+          const: LineString
+        coordinates:
+          type: array
+          items:
+            type: array
+            prefixItems:
+            - type: number
+              minimum: -180
+              maximum: 180
+            - type: number
+              minimum: -90
+              maximum: 90
+            items: false
+            minItems: 2
+            maxItems: 2
+          minItems: 2
+      description: GeoJSON LineString in WGS84 decimal degrees, [longitude, latitude]. A routed walkable
+        path visiting stops in order, from the first to last Place (access points may be snapped to the
+        pedestrian network). Connecting POI coordinates directly is not a substitute. Frontend renders
+        this geometry and must not invent it or recalculate walking statistics.
+      examples:
+      - type: LineString
+        coordinates:
+        - - 16.9342
+          - 52.4083
+        - - 16.9348
+          - 52.4083
+        - - 16.9348
+          - 52.4075
+        - - 16.9348
+          - 52.4068
+        - - 16.9345
+          - 52.4065
+    RouteStop:
+      type: object
+      additionalProperties: false
+      required:
+      - position
+      - place
+      properties:
+        position:
+          type: integer
+          minimum: 1
+          maximum: 50
+        place:
+          $ref: '#/components/schemas/Place'
+      description: Place membership, not a new Place identity. Array order and contiguous 1-based position
+        agree. Each Place ID occurs once. Embedded Place fields are sufficient for itinerary/map/detail
+        presentation; no per-stop GET is required.
+      examples:
+      - position: 1
+        place:
+          id: place_stary_rynek
+          cityId: city_poznan
+          name: Stary Rynek
+          description: Historyczny rynek z renesansowym ratuszem.
+          address: Stary Rynek, Poznań
+          latitude: 52.4083
+          longitude: 16.9342
+          categoryIds:
+          - sightseeing
+          visitDurationMinutes: 30
+          estimatedCostPln: 0
+          imageUrl: null
+    AdminRouteStop:
+      type: object
+      additionalProperties: false
+      required:
+      - position
+      - place
+      properties:
+        position:
+          type: integer
+          minimum: 1
+          maximum: 50
+        place:
+          $ref: '#/components/schemas/AdminPlace'
+      description: Same ordering rules as RouteStop; includes unavailable Places so an administrator can
+        correct drafts.
+      examples:
+      - position: 1
+        place:
+          id: place_stary_rynek
+          cityId: city_poznan
+          name: Stary Rynek
+          description: Historyczny rynek z renesansowym ratuszem.
+          address: Stary Rynek, Poznań
+          latitude: 52.4083
+          longitude: 16.9342
+          categoryIds:
+          - sightseeing
+          visitDurationMinutes: 30
+          estimatedCostPln: 0
+          imageUrl: null
+          isAvailable: true
+          providerIdentity: null
+    CuratedRouteSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - city
+      - title
+      - shortDescription
+      - imageUrl
+      - categoryIds
+      - statistics
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        city:
+          $ref: '#/components/schemas/CityReference'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        shortDescription:
+          type: string
+          minLength: 1
+          maxLength: 280
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+        statistics:
+          $ref: '#/components/schemas/RouteStatistics'
+      description: Published curated route. categoryIds is the deduplicated union of stop Place categories,
+        ordered as /categories; not separately editable. Lists omit description, stops and geometry.
+      examples:
+      - id: route_stare_miasto
+        city:
+          id: city_poznan
+          name: Poznań
+        title: Serce Starego Miasta
+        shortDescription: Krótki spacer od Rynku do Fary.
+        imageUrl: null
+        categoryIds:
+        - sightseeing
+        statistics:
+          distanceMeters: 250
+          walkingDurationMinutes: 4
+          visitDurationMinutes: 60
+          totalDurationMinutes: 64
+          estimatedCostPln: 0
+          stopCount: 2
+    CuratedRoute:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - city
+      - title
+      - shortDescription
+      - imageUrl
+      - categoryIds
+      - statistics
+      - description
+      - stops
+      - geometry
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        city:
+          $ref: '#/components/schemas/CityReference'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        shortDescription:
+          type: string
+          minLength: 1
+          maxLength: 280
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+        statistics:
+          $ref: '#/components/schemas/RouteStatistics'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        stops:
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteStop'
+          minItems: 2
+          maxItems: 50
+        geometry:
+          $ref: '#/components/schemas/WalkingGeometry'
+      description: Complete published route. All Places belong to the route city and are available. At
+        least two distinct Places, complete metadata, consistent statistics and walking geometry are guaranteed.
+        Public resources never expose drafts.
+      examples:
+      - id: route_stare_miasto
+        city:
+          id: city_poznan
+          name: Poznań
+        title: Serce Starego Miasta
+        shortDescription: Krótki spacer od Rynku do Fary.
+        imageUrl: null
+        categoryIds:
+        - sightseeing
+        statistics:
+          distanceMeters: 250
+          walkingDurationMinutes: 4
+          visitDurationMinutes: 60
+          totalDurationMinutes: 64
+          estimatedCostPln: 0
+          stopCount: 2
+        description: Spacer po historycznym centrum z czasem na zwiedzanie.
+        stops:
+        - position: 1
+          place:
+            id: place_stary_rynek
+            cityId: city_poznan
+            name: Stary Rynek
+            description: Historyczny rynek z renesansowym ratuszem.
+            address: Stary Rynek, Poznań
+            latitude: 52.4083
+            longitude: 16.9342
+            categoryIds:
+            - sightseeing
+            visitDurationMinutes: 30
+            estimatedCostPln: 0
+            imageUrl: null
+        - position: 2
+          place:
+            id: place_fara
+            cityId: city_poznan
+            name: Fara Poznańska
+            description: Barokowa bazylika przy ulicy Gołębiej.
+            address: ul. Gołębia 1, Poznań
+            latitude: 52.4065
+            longitude: 16.9345
+            categoryIds:
+            - sightseeing
+            visitDurationMinutes: 30
+            estimatedCostPln: 0
+            imageUrl: null
+        geometry:
+          type: LineString
+          coordinates:
+          - - 16.9342
+            - 52.4083
+          - - 16.9348
+            - 52.4083
+          - - 16.9348
+            - 52.4075
+          - - 16.9348
+            - 52.4068
+          - - 16.9345
+            - 52.4065
+    RouteMetadataWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - cityId
+      - title
+      - shortDescription
+      - description
+      properties:
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        shortDescription:
+          type: string
+          minLength: 0
+          maxLength: 280
+        description:
+          type: string
+          minLength: 0
+          maxLength: 5000
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+      description: POST creates a draft with no stops. PUT replaces all editable metadata; omitted imageUrl
+        clears it. Trim text before validation. Empty descriptions are allowed while drafting, but not
+        publishing. cityId can change only on an empty draft; otherwise 409 ROUTE_CITY_CONFLICT. Status,
+        categories, statistics and geometry are server-owned.
+      examples:
+      - cityId: city_poznan
+        title: Serce Starego Miasta
+        shortDescription: Krótki spacer od Rynku do Fary.
+        description: Spacer po historycznym centrum z czasem na zwiedzanie.
+        imageUrl: null
+    AdminRouteSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - city
+      - title
+      - shortDescription
+      - imageUrl
+      - categoryIds
+      - statistics
+      - status
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        city:
+          $ref: '#/components/schemas/CityReference'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        shortDescription:
+          type: string
+          minLength: 0
+          maxLength: 280
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 0
+          maxItems: 4
+          uniqueItems: true
+        statistics:
+          oneOf:
+          - $ref: '#/components/schemas/RouteStatistics'
+          - type: 'null'
+          description: Null when no valid routed statistics are available. Published routes always have
+            statistics.
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+      allOf:
+      - if:
+          properties:
+            status:
+              const: published
+          required:
+          - status
+        then:
+          properties:
+            shortDescription:
+              minLength: 1
+            categoryIds:
+              minItems: 1
+            statistics:
+              $ref: '#/components/schemas/RouteStatistics'
+      examples:
+      - id: route_stare_miasto
+        city:
+          id: city_poznan
+          name: Poznań
+        title: Serce Starego Miasta
+        shortDescription: Krótki spacer od Rynku do Fary.
+        imageUrl: null
+        categoryIds:
+        - sightseeing
+        statistics:
+          distanceMeters: 250
+          walkingDurationMinutes: 4
+          visitDurationMinutes: 60
+          totalDurationMinutes: 64
+          estimatedCostPln: 0
+          stopCount: 2
+        status: published
+    AdminRoute:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - city
+      - title
+      - shortDescription
+      - imageUrl
+      - categoryIds
+      - statistics
+      - status
+      - description
+      - stops
+      - geometry
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        city:
+          $ref: '#/components/schemas/CityReference'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        shortDescription:
+          type: string
+          minLength: 0
+          maxLength: 280
+        imageUrl:
+          $ref: '#/components/schemas/ImageUrl'
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 0
+          maxItems: 4
+          uniqueItems: true
+        statistics:
+          oneOf:
+          - $ref: '#/components/schemas/RouteStatistics'
+          - type: 'null'
+          description: Null when no valid routed statistics are available. Published routes always have
+            statistics.
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+        description:
+          type: string
+          minLength: 0
+          maxLength: 5000
+        stops:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminRouteStop'
+          minItems: 0
+          maxItems: 50
+        geometry:
+          oneOf:
+          - $ref: '#/components/schemas/WalkingGeometry'
+          - type: 'null'
+      description: Draft geometry/statistics are null when not ready and invalidated together after stop
+        or routing/statistics-relevant Place changes. Safe Place metadata/category edits update embedded
+        data and category unions without invalidating geometry/statistics. Both are non-null for published
+        routes; never represent stale data as current. Published routes additionally require complete
+        metadata, two distinct available same-city Places and routed data.
+      allOf:
+      - if:
+          properties:
+            status:
+              const: published
+          required:
+          - status
+        then:
+          properties:
+            shortDescription:
+              minLength: 1
+            categoryIds:
+              minItems: 1
+            statistics:
+              $ref: '#/components/schemas/RouteStatistics'
+            description:
+              minLength: 1
+            geometry:
+              $ref: '#/components/schemas/WalkingGeometry'
+            stops:
+              minItems: 2
+              items:
+                properties:
+                  place:
+                    properties:
+                      isAvailable:
+                        const: true
+      examples:
+      - id: route_stare_miasto
+        city:
+          id: city_poznan
+          name: Poznań
+        title: Serce Starego Miasta
+        shortDescription: ''
+        imageUrl: null
+        categoryIds: []
+        statistics: null
+        description: ''
+        stops: []
+        geometry: null
+        status: draft
+    ReplaceRouteStopsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - placeIds
+      properties:
+        placeIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceId'
+          minItems: 0
+          maxItems: 50
+          uniqueItems: true
+      description: Full desired ordered Place IDs. Adds, removes and reorders membership atomically; never
+        deletes Places. Empty is allowed for drafts. Missing IDs are rejected with 422 PLACE_NOT_FOUND;
+        cross-city IDs with 422 PLACE_CITY_MISMATCH. Duplicate IDs are a 400 validation error. No partial
+        replacement on failure.
+      examples:
+      - placeIds:
+        - place_stary_rynek
+        - place_fara
+    WalkingIntensity:
+      type: string
+      enum:
+      - low
+      - medium
+      - high
+      description: 'Maximum routed walking distance: low 3000 m, medium 6000 m, high 10000 m. Inclusive
+        ceilings, in addition to budget/time constraints; not speed or an accessibility guarantee. Higher
+        intensity permits but does not require more walking.'
+    GenerateRouteRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - cityId
+      - categoryIds
+      - budgetPln
+      - maxMinutes
+      - walkingIntensity
+      properties:
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+        budgetPln:
+          $ref: '#/components/schemas/MoneyPln'
+        maxMinutes:
+          type: integer
+          minimum: 30
+          description: Required maximum total time including walking and visits; no unlimited/null mode.
+          maximum: 720
+        walkingIntensity:
+          $ref: '#/components/schemas/WalkingIntensity'
+        excludePlaceIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceId'
+          minItems: 0
+          maxItems: 50
+          uniqueItems: true
+          description: Optional hard exclusions, default []. None may occur in returned stops. Unknown,
+            unavailable or other-city IDs are harmless exclusions, not lookup errors. At most 50 unique
+            IDs; no result history is stored.
+      description: Available Places must belong to cityId, intersect categoryIds (OR matching) and not
+        be excluded. All returned Places match at least one requested category; no requirement to cover
+        every selected category. Prefer broader selected-category coverage when equally feasible, without
+        violating budget/time/intensity ceilings. At least two distinct Places required. Repeating without
+        exclusions may return the same result.
+      examples:
+      - cityId: city_poznan
+        categoryIds:
+        - sightseeing
+        budgetPln: 150
+        maxMinutes: 180
+        walkingIntensity: medium
+      - cityId: city_poznan
+        categoryIds:
+        - sightseeing
+        - food
+        budgetPln: 150
+        maxMinutes: 180
+        walkingIntensity: medium
+        excludePlaceIds:
+        - place_previous_cafe
+    GeneratedRoute:
+      type: object
+      additionalProperties: false
+      required:
+      - city
+      - title
+      - categoryIds
+      - statistics
+      - stops
+      - geometry
+      properties:
+        city:
+          $ref: '#/components/schemas/CityReference'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        categoryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryId'
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+        statistics:
+          $ref: '#/components/schemas/RouteStatistics'
+        stops:
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteStop'
+          minItems: 2
+          maxItems: 50
+        geometry:
+          $ref: '#/components/schemas/WalkingGeometry'
+      description: Ephemeral result with no permanent ID. Compatible city/title/categories/statistics/stops/geometry
+        fields with curated viewer. categoryIds is the actual union of returned Place categories in /categories
+        order (including co-tags), not a false claim that every requested category is covered. Every Place
+        intersects requested categories. Cost <= budgetPln, total time <= maxMinutes, distance <= intensity
+        ceiling, and excluded IDs absent. No persistence/history/job resource.
+      examples:
+      - city:
+          id: city_poznan
+          name: Poznań
+        title: Serce Starego Miasta
+        categoryIds:
+        - sightseeing
+        statistics:
+          distanceMeters: 250
+          walkingDurationMinutes: 4
+          visitDurationMinutes: 60
+          totalDurationMinutes: 64
+          estimatedCostPln: 0
+          stopCount: 2
+        stops:
+        - position: 1
+          place:
+            id: place_stary_rynek
+            cityId: city_poznan
+            name: Stary Rynek
+            description: Historyczny rynek z renesansowym ratuszem.
+            address: Stary Rynek, Poznań
+            latitude: 52.4083
+            longitude: 16.9342
+            categoryIds:
+            - sightseeing
+            visitDurationMinutes: 30
+            estimatedCostPln: 0
+            imageUrl: null
+        - position: 2
+          place:
+            id: place_fara
+            cityId: city_poznan
+            name: Fara Poznańska
+            description: Barokowa bazylika przy ulicy Gołębiej.
+            address: ul. Gołębia 1, Poznań
+            latitude: 52.4065
+            longitude: 16.9345
+            categoryIds:
+            - sightseeing
+            visitDurationMinutes: 30
+            estimatedCostPln: 0
+            imageUrl: null
+        geometry:
+          type: LineString
+          coordinates:
+          - - 16.9342
+            - 52.4083
+          - - 16.9348
+            - 52.4083
+          - - 16.9348
+            - 52.4075
+          - - 16.9348
+            - 52.4068
+          - - 16.9345
+            - 52.4065
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 3
+          description: Trim surrounding whitespace and lowercase before syntax validation and identity
+            lookup. Account identity uses the normalized address consistently.
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      description: Same login for both roles; do not reapply new-password policy to existing passwords.
+        Normalize email only. Unknown/disabled accounts and incorrect passwords share 401 UNAUTHORIZED.
+        Only after a correct password may 403 EMAIL_NOT_VERIFIED disclose verification state.
+      examples:
+      - email: user@example.com
+        password: a-long-example-password
+    PoiSearchRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - cityId
+      - query
+      properties:
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        query:
+          type: string
+          minLength: 2
+          maxLength: 120
+      description: Trim query. Simple city-scoped provider search; no persistence. Returns at most 10
+        candidates, no continuation mechanism.
+      examples:
+      - cityId: city_poznan
+        query: Stary Rynek
+    PoiCandidate:
+      type: object
+      additionalProperties: false
+      required:
+      - providerIdentity
+      - name
+      - address
+      - latitude
+      - longitude
+      properties:
+        providerIdentity:
+          $ref: '#/components/schemas/ProviderIdentity'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        address:
+          type: string
+          minLength: 0
+          maxLength: 300
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+      description: Search candidate, not an internal Place. Use the chosen cityId and returned identity
+        to import. Provider key is opaque; clients must not construct it.
+      examples:
+      - providerIdentity:
+          provider: poi_catalog
+          providerPlaceId: poznan-123
+        name: Stary Rynek
+        address: Stary Rynek, Poznań
+        latitude: 52.4083
+        longitude: 16.9342
+    PoiImportRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - cityId
+      - providerIdentity
+      properties:
+        cityId:
+          $ref: '#/components/schemas/ResourceId'
+        providerIdentity:
+          $ref: '#/components/schemas/ProviderIdentity'
+      description: Use an identity returned by search; backend obtains authoritative candidate data, never
+        trusts frontend POI coordinates/content. New imports are unavailable Places with estimated cost
+        0, visit time 30, empty categories and descriptions if absent. Review estimates/content before
+        making available. imageUrl is null when no usable URL is available.
+      examples:
+      - cityId: city_poznan
+        providerIdentity:
+          provider: poi_catalog
+          providerPlaceId: poznan-123
+    FieldIssue:
+      type: object
+      additionalProperties: false
+      required:
+      - path
+      - message
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 200
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+      description: Dotted field path, e.g. categoryIds.0 or placeIds.1; $ means a whole-request/readiness
+        issue.
+      examples:
+      - path: budgetPln
+        message: Must be non-negative
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+              enum:
+              - VALIDATION_ERROR
+              - UNAUTHORIZED
+              - FORBIDDEN
+              - NOT_FOUND
+              - CITY_NOT_SUPPORTED
+              - PLACE_NOT_FOUND
+              - PLACE_CITY_MISMATCH
+              - PLACE_CITY_CONFLICT
+              - PLACE_IN_USE
+              - PLACE_IN_PUBLISHED_ROUTE
+              - ROUTE_PUBLISHED
+              - ROUTE_CITY_CONFLICT
+              - PROVIDER_PLACE_CITY_CONFLICT
+              - ROUTE_NOT_READY
+              - NO_FEASIBLE_ROUTE
+              - POI_NOT_FOUND
+              - PROVIDER_ERROR
+              - SERVICE_UNAVAILABLE
+              - RATE_LIMITED
+              - INTERNAL_ERROR
+              - EMAIL_NOT_VERIFIED
+              - INVALID_VERIFICATION_CODE
+              - CURRENT_PASSWORD_INVALID
+              description: Codes and applicable HTTP status are defined per operation. CITY_NOT_SUPPORTED
+                (422) identifies invalid city body references; NOT_FOUND (404) identifies missing/hidden
+                path resources. INVALID_VERIFICATION_CODE (400) also covers unknown email, used/invalidated
+                codes and exhausted attempts, without distinguishing them.
+            message:
+              type: string
+              minLength: 1
+              maxLength: 500
+            issues:
+              type: array
+              items:
+                $ref: '#/components/schemas/FieldIssue'
+              minItems: 1
+      description: Stable code for frontend branching; message is diagnostic and need not be localized.
+        issues is supplied for field validation/readiness where useful. No stack traces or provider credentials.
+      examples:
+      - error:
+          code: VALIDATION_ERROR
+          message: Invalid request
+          issues:
+          - path: budgetPln
+            message: Must be non-negative
+    CitiesResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/City'
+          minItems: 0
+    CategoriesResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+          minItems: 0
+    RoutesResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CuratedRouteSummary'
+          minItems: 0
+    AdminPlacesResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPlace'
+          minItems: 0
+    AdminRoutesResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminRouteSummary'
+          minItems: 0
+    PoiCandidatesResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PoiCandidate'
+          minItems: 0
+          maxItems: 10
+    PlaceResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Place'
+    AdminPlaceResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AdminPlace'
+    CuratedRouteResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CuratedRoute'
+    GeneratedRouteResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/GeneratedRoute'
+    AdminRouteResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AdminRoute'
+    NewPassword:
+      type: string
+      minLength: 12
+      maxLength: 128
+      pattern: \S
+      description: 12–128 characters, containing at least one non-whitespace character. No mandatory character
+        classes. Do not trim, lowercase, truncate or normalize passwords. Same creation policy for both
+        roles.
+    RefreshToken:
+      type: string
+      minLength: 1
+      maxLength: 4096
+      description: Opaque sensitive token identifying one refresh session. Valid for 604800 seconds (7
+        days) from login, without rotation or sliding expiry. Never accepted as a bearer access token.
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 3
+          description: Trim surrounding whitespace and lowercase before syntax validation and identity
+            lookup. Account identity uses the normalized address consistently.
+        password:
+          $ref: '#/components/schemas/NewPassword'
+      description: Registration always creates role user with unverified email. No role/displayName/session
+        fields are accepted. Existing accounts and passwords are never overwritten.
+      examples:
+      - email: user@example.com
+        password: a-long-example-password
+    VerificationRequired:
+      type: object
+      additionalProperties: false
+      required:
+      - verificationRequired
+      properties:
+        verificationRequired:
+          type: boolean
+          const: true
+      description: Generic acceptance only; not proof of account existence or email delivery. No credentials/session
+        are issued.
+      examples:
+      - verificationRequired: true
+    VerifyEmailRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - code
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 3
+          description: Trim surrounding whitespace and lowercase before syntax validation and identity
+            lookup. Account identity uses the normalized address consistently.
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+          description: One-time code from the most recent verification email. Do not send as an integer;
+            leading zeroes matter.
+          minLength: 6
+          maxLength: 6
+      examples:
+      - email: user@example.com
+        code: '012345'
+    ResendVerificationRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 3
+          description: Trim surrounding whitespace and lowercase before syntax validation and identity
+            lookup. Account identity uses the normalized address consistently.
+      examples:
+      - email: user@example.com
+    VerificationStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - emailVerified
+      properties:
+        emailVerified:
+          type: boolean
+          const: true
+      description: Verification succeeded. No authenticated session is issued; log in afterwards.
+      examples:
+      - emailVerified: true
+    TokenSession:
+      type: object
+      additionalProperties: false
+      required:
+      - accessToken
+      - refreshToken
+      - tokenType
+      - expiresIn
+      - refreshExpiresAt
+      properties:
+        accessToken:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        refreshToken:
+          $ref: '#/components/schemas/RefreshToken'
+        tokenType:
+          type: string
+          const: Bearer
+        expiresIn:
+          type: integer
+          const: 900
+        refreshExpiresAt:
+          type: string
+          format: date-time
+          description: Absolute original refresh-session expiry (login time + 7 days). Never moves on
+            refresh; not the access-token expiry.
+      description: Login creates a refresh session. Refresh issues a new 15-minute access token but returns
+        the EXACT same refreshToken and refreshExpiresAt. Access lifetime can extend at most 15 minutes
+        beyond refresh expiry; it never restores refresh validity. Token encodings and storage internals
+        are not API contracts.
+      examples:
+      - accessToken: example-access-token-not-a-real-credential
+        refreshToken: example-refresh-token-not-a-real-credential
+        tokenType: Bearer
+        expiresIn: 900
+        refreshExpiresAt: '2026-11-16T12:00:00Z'
+    RefreshTokenRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - refreshToken
+      properties:
+        refreshToken:
+          $ref: '#/components/schemas/RefreshToken'
+      examples:
+      - refreshToken: example-refresh-token-not-a-real-credential
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - currentPassword
+      - newPassword
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+          maxLength: 128
+        newPassword:
+          $ref: '#/components/schemas/NewPassword'
+      description: Requires bearer access token. Verify current password; new password must differ (400
+        VALIDATION_ERROR with newPassword issue). Success revokes ALL refresh sessions and invalidates
+        ALL access tokens for this account immediately, including caller, without issuing replacement
+        credentials. Log in again with the new password.
+      examples:
+      - currentPassword: a-long-example-password
+        newPassword: another-long-example-password
+    CurrentUser:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - email
+      - emailVerified
+      - role
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 3
+          description: Trim surrounding whitespace and lowercase before syntax validation and identity
+            lookup. Account identity uses the normalized address consistently.
+        emailVerified:
+          type: boolean
+          const: true
+        role:
+          type: string
+          enum:
+          - user
+          - admin
+      description: Authenticated verified user. Role comes from server-managed account state, never registration
+        input or client flags. No profile-management API.
+      examples:
+      - id: user_123
+        email: user@example.com
+        emailVerified: true
+        role: user
+    VerificationRequiredResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/VerificationRequired'
+    VerificationStatusResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/VerificationStatus'
+    TokenSessionResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/TokenSession'
+    CurrentUserResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CurrentUser'
+    CityReference:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      properties:
+        id:
+          $ref: '#/components/schemas/ResourceId'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+      description: Compact city identity for route lists/details/results. Map centre and city description
+        come from cached /cities, not duplicated per route.
+  responses:
+    BadRequest:
+      description: Invalid JSON, unknown fields/query parameters, incorrect types or schema validation
+        failure. Numeric strings are not accepted in JSON bodies.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Invalid request
+    Unauthorized:
+      description: Missing, invalid or expired access credential, invalid login, or expired/revoked/invalid
+        refresh session. Refresh tokens never authenticate bearer-protected operations.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: UNAUTHORIZED
+              message: Authentication failed or session is invalid
+      headers:
+        WWW-Authenticate:
+          description: Bearer challenge.
+          schema:
+            type: string
+          example: Bearer realm="trasa"
+    Forbidden:
+      description: Authenticated principal does not have administrator access.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: FORBIDDEN
+              message: Administrator access required
+    NotFound:
+      description: Resource does not exist or is not publicly available. Draft routes and unavailable
+        Places return the same 404 as unknown IDs.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: NOT_FOUND
+              message: Resource not found
+    ProviderFailure:
+      description: External provider failed or returned unusable data; no partial write or fabricated
+        geometry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: PROVIDER_ERROR
+              message: External provider failed
+    ServiceUnavailable:
+      description: Routing/POI service is unavailable or exceeded its synchronous processing window. Retry
+        explicitly; no job is created.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: SERVICE_UNAVAILABLE
+              message: Service temporarily unavailable
+    RateLimited:
+      description: Request limit exceeded. Retry-After gives whole seconds until retry. Email-based limits
+        apply independently of whether the account exists.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: RATE_LIMITED
+              message: Too many requests
+      headers:
+        Retry-After:
+          description: Seconds until a retry is allowed.
+          schema:
+            type: integer
+            minimum: 1
+          example: 30
+    InternalError:
+      description: Unexpected server failure. No implementation details are exposed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: INTERNAL_ERROR
+              message: Internal server error
